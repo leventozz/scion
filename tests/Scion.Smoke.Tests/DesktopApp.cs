@@ -71,11 +71,22 @@ internal sealed class DesktopApp : IAsyncDisposable
     /// does not exist, so no test can reach the user's real Codex, not even through the search path.
     /// </param>
     /// <param name="fakeCodexScript">The script the stand-in codex reads (SCION_FAKE_CODEX_SCRIPT).</param>
+    /// <param name="updateSource">
+    /// The folder of releases the app updates from (SCION_UPDATE_SOURCE). Without one it is <see cref="NoUpdateSource"/>, a folder
+    /// that does not exist, so no test can reach GitHub, not even through the default address.
+    /// </param>
+    /// <param name="installedVersion">
+    /// When set, the app behaves as if this version was installed (SCION_TEST_INSTALLED_VERSION). Without it the app is not
+    /// installed, so it looks for no update at all.
+    /// </param>
     /// <summary>A path that never exists. An explicit path is the only place the app looks, so it never falls back to the real claude.</summary>
     public static readonly string NoClaude = Path.Combine(Path.GetTempPath(), "scion-tests-no-claude", "claude.exe");
 
     /// <summary>A path that never exists, for the same reason as <see cref="NoClaude"/>.</summary>
     public static readonly string NoCodex = Path.Combine(Path.GetTempPath(), "scion-tests-no-codex", "codex.exe");
+
+    /// <summary>A folder that never exists, for the same reason as <see cref="NoClaude"/>: the update source is never the default address.</summary>
+    public static readonly string NoUpdateSource = Path.Combine(Path.GetTempPath(), "scion-tests-no-update-source");
 
     public static async Task<DesktopApp> StartAsync(
         TempDirectory? scionHome = null,
@@ -84,7 +95,9 @@ internal sealed class DesktopApp : IAsyncDisposable
         string? claudePath = null,
         string? fakeClaudeScript = null,
         string? codexPath = null,
-        string? fakeCodexScript = null)
+        string? fakeCodexScript = null,
+        string? updateSource = null,
+        string? installedVersion = null)
     {
         scionHome ??= new TempDirectory("scion-home");
         var port = FreeTcpPort();
@@ -97,6 +110,8 @@ internal sealed class DesktopApp : IAsyncDisposable
         startInfo.Environment.Remove("SCION_FAKE_CLAUDE_SCRIPT");
         startInfo.Environment.Remove("SCION_CODEX_PATH");
         startInfo.Environment.Remove("SCION_FAKE_CODEX_SCRIPT");
+        startInfo.Environment.Remove("SCION_UPDATE_SOURCE");
+        startInfo.Environment.Remove("SCION_TEST_INSTALLED_VERSION");
 
         startInfo.Environment["SCION_CLAUDE_PATH"] = claudePath ?? NoClaude;
 
@@ -110,6 +125,13 @@ internal sealed class DesktopApp : IAsyncDisposable
         if (fakeCodexScript is not null)
         {
             startInfo.Environment["SCION_FAKE_CODEX_SCRIPT"] = fakeCodexScript;
+        }
+
+        startInfo.Environment["SCION_UPDATE_SOURCE"] = updateSource ?? NoUpdateSource;
+
+        if (installedVersion is not null)
+        {
+            startInfo.Environment["SCION_TEST_INSTALLED_VERSION"] = installedVersion;
         }
 
         if (recordShell)

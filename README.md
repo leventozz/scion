@@ -77,6 +77,11 @@ copy it as it is.
 - Nothing existing is overwritten without an explicit decision. An overwrite is built in a scratch folder
   first and the old version is restored if it fails.
 - Every save keeps the previous version of the file (the last 20 per file).
+- Scion looks for updates in the releases of its GitHub repository (`leventozz/scion`): when you choose
+  *Check for updates* (click *Scion* at the top left), and when it starts, at most once a day. It sends only the
+  request for the list of releases and, when you choose *Download update*, the download of the package. It sends
+  no credentials and nothing about your projects or skills. Switch the check at start-up off with
+  *Check for updates when Scion starts* in the same place.
 
 ## Getting started
 

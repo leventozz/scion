@@ -27,6 +27,8 @@ internal sealed class RecordingLocator : TestVelopackLocator, IProcessImpl
 
     public List<(string Program, IReadOnlyList<string> Arguments)> Started { get; } = [];
 
+    public Exception? StartFails { get; set; }
+
     public static RecordingLocator In(string folder)
     {
         File.WriteAllText(Path.Combine(folder, "Update.exe"), "");
@@ -34,6 +36,13 @@ internal sealed class RecordingLocator : TestVelopackLocator, IProcessImpl
         return new RecordingLocator(folder);
     }
 
-    void IProcessImpl.StartProcess(string exePath, IEnumerable<string> args, string workDir, bool showWindow) =>
+    void IProcessImpl.StartProcess(string exePath, IEnumerable<string> args, string workDir, bool showWindow)
+    {
+        if (StartFails is not null)
+        {
+            throw StartFails;
+        }
+
         Started.Add((exePath, args.ToList()));
+    }
 }

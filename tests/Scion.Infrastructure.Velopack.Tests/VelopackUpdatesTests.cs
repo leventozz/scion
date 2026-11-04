@@ -14,7 +14,7 @@ public class VelopackUpdatesTests : IDisposable
         _installation.Dispose();
     }
 
-    private VelopackUpdates InstalledAs(string version) => new(_releases.Path, Locators.Installed(version, _installation.Path));
+    private VelopackUpdates InstalledAs(string version) => new(_releases.Path, "9.9.9", Locators.Installed(version, _installation.Path));
 
     [Fact]
     public async Task A_newer_release_is_available_with_its_notes()
@@ -61,7 +61,7 @@ public class VelopackUpdatesTests : IDisposable
     public async Task A_scion_that_is_not_installed_runs_from_source()
     {
         _releases.Publish("0.1.1");
-        var updates = new VelopackUpdates(_releases.Path, Locators.NotInstalled(_installation.Path));
+        var updates = new VelopackUpdates(_releases.Path, "9.9.9", Locators.NotInstalled(_installation.Path));
 
         var check = await updates.CheckAsync(CancellationToken.None);
 
@@ -74,7 +74,7 @@ public class VelopackUpdatesTests : IDisposable
         VelopackApp.Build().Run();
         _releases.Publish("0.1.1");
 
-        var check = await new VelopackUpdates(_releases.Path).CheckAsync(CancellationToken.None);
+        var check = await new VelopackUpdates(_releases.Path, "9.9.9").CheckAsync(CancellationToken.None);
 
         Assert.Equal(new UpdateCheck.RunningFromSource(), check);
     }
@@ -90,7 +90,7 @@ public class VelopackUpdatesTests : IDisposable
     [Fact]
     public async Task A_repository_that_cannot_be_reached_is_a_failed_update()
     {
-        var updates = new VelopackUpdates("http://127.0.0.1:1/owner/repository", Locators.Installed("0.1.0", _installation.Path));
+        var updates = new VelopackUpdates("http://127.0.0.1:1/owner/repository", "9.9.9", Locators.Installed("0.1.0", _installation.Path));
 
         await Assert.ThrowsAsync<UpdateFailedException>(() => updates.CheckAsync(CancellationToken.None));
     }
@@ -110,9 +110,28 @@ public class VelopackUpdatesTests : IDisposable
     }
 
     [Fact]
-    public async Task An_update_that_was_never_found_cannot_be_downloaded()
+    public async Task An_update_remembered_from_an_earlier_start_is_looked_up_again_and_downloaded()
     {
-        _releases.Publish("0.1.1");
+        _releases.Publish("0.1.1", package: [1, 2, 3]);
+
+        await InstalledAs("0.1.0").DownloadAsync(new AvailableUpdate("0.1.1", null), new Reported([]), CancellationToken.None);
+
+        Assert.Equal([1, 2, 3], await File.ReadAllBytesAsync(Path.Combine(_installation.Path, "Scion-0.1.1-full.nupkg")));
+    }
+
+    [Fact]
+    public async Task An_update_the_feed_no_longer_offers_cannot_be_downloaded()
+    {
+        _releases.Publish("0.1.2");
+
+        await Assert.ThrowsAsync<UpdateFailedException>(
+            () => InstalledAs("0.1.0").DownloadAsync(new AvailableUpdate("0.1.1", null), new Reported([]), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task A_feed_that_cannot_be_read_while_looking_up_a_remembered_update_is_a_failed_update()
+    {
+        _releases.WriteFeed("not json");
 
         await Assert.ThrowsAsync<UpdateFailedException>(
             () => InstalledAs("0.1.0").DownloadAsync(new AvailableUpdate("0.1.1", null), new Reported([]), CancellationToken.None));
@@ -147,7 +166,7 @@ public class VelopackUpdatesTests : IDisposable
     {
         _releases.Publish("0.1.1");
         var locator = RecordingLocator.In(_releases.Path);
-        var updates = new VelopackUpdates(_releases.Path, locator);
+        var updates = new VelopackUpdates(_releases.Path, "9.9.9", locator);
         var update = ((UpdateCheck.Available)await updates.CheckAsync(CancellationToken.None)).Update;
 
         updates.ApplyWhenScionExits(update);
@@ -163,7 +182,51 @@ public class VelopackUpdatesTests : IDisposable
     {
         var updates = InstalledAs("0.1.0");
 
-        Assert.Throws<InvalidOperationException>(() => updates.ApplyWhenScionExits(new AvailableUpdate("0.1.1", null)));
+        Assert.Throws<UpdateFailedException>(() => updates.ApplyWhenScionExits(new AvailableUpdate("0.1.1", null)));
+    }
+
+    [Fact]
+    public async Task An_updater_that_cannot_be_started_is_a_failed_update()
+    {
+        _releases.Publish("0.1.1");
+        var locator = RecordingLocator.In(_releases.Path);
+        locator.StartFails = new InvalidOperationException("The updater is gone.");
+        var updates = new VelopackUpdates(_releases.Path, "9.9.9", locator);
+        var update = ((UpdateCheck.Available)await updates.CheckAsync(CancellationToken.None)).Update;
+
+        var failure = Assert.Throws<UpdateFailedException>(() => updates.ApplyWhenScionExits(update));
+
+        Assert.Equal("The updater is gone.", failure.Message);
+    }
+
+    [Fact]
+    public void An_installed_scion_has_the_version_it_was_installed_with()
+    {
+        var installation = (IScionInstallation)InstalledAs("0.1.0");
+
+        Assert.True(installation.IsInstalled);
+        Assert.Equal("0.1.0", installation.Version);
+    }
+
+    [Fact]
+    public void A_scion_that_is_not_installed_has_the_version_of_its_build()
+    {
+        var installation = (IScionInstallation)new VelopackUpdates(_releases.Path, "1.2.3", Locators.NotInstalled(_installation.Path));
+
+        Assert.False(installation.IsInstalled);
+        Assert.Equal("1.2.3", installation.Version);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  \r\n ")]
+    public async Task Release_notes_that_say_nothing_are_no_notes(string notes)
+    {
+        _releases.Publish("0.1.1", notes: notes);
+
+        var check = await InstalledAs("0.1.0").CheckAsync(CancellationToken.None);
+
+        Assert.Equal(new UpdateCheck.Available(new AvailableUpdate("0.1.1", null)), check);
     }
 
     /// <summary>Reports synchronously, so a test can read what was reported as soon as the download is done.</summary>

@@ -6,6 +6,7 @@ using Scion.Application.Editing;
 using Scion.Application.Projects;
 using Scion.Application.Skills;
 using Scion.Application.Skills.Copying;
+using Scion.Application.Updating;
 using Scion.Application.Viewing;
 
 namespace Scion.UI.Tests;
@@ -27,6 +28,8 @@ internal sealed class UiFakes
         InstructionFileCreation = new InMemoryInstructionFileCreation(InstructionFiles);
         SkillTrash = new InMemorySkillTrash(Reader);
         AdaptedSkillWriter = new InMemoryAdaptedSkillWriter(Reader);
+        var check = new CheckForUpdates(UpdateFeed, UpdateSettings, UpdateCheckRecord, Installation, Time);
+        UpdateSession = new UpdateSession(check, new DownloadUpdate(UpdateDownloader), new ApplyUpdate(UpdateApplier), Installation, CloseGuard);
     }
 
     public InMemoryProjectRegistry Registry { get; } = new();
@@ -91,6 +94,22 @@ internal sealed class UiFakes
     public FakeFrontmatterParser FrontmatterParser { get; } = new();
 
     public RecordingWindowCloser WindowCloser { get; } = new();
+
+    public static Uri ReleasesPage { get; } = new("https://example.test/releases");
+
+    public FakeScionInstallation Installation { get; } = new();
+
+    public FakeUpdateFeed UpdateFeed { get; } = new();
+
+    public FakeUpdateDownloader UpdateDownloader { get; } = new();
+
+    public RecordingUpdateApplier UpdateApplier { get; } = new();
+
+    public FakeUpdateSettings UpdateSettings { get; } = new();
+
+    public FakeUpdateCheckRecord UpdateCheckRecord { get; } = new();
+
+    public UpdateSession UpdateSession { get; }
 
     public CloseGuard CloseGuard { get; }
 
@@ -161,6 +180,11 @@ internal sealed class UiFakes
         services.AddSingleton(new CreateSkill(Folders, SkillFolders, new FakeFrontmatterWriter(), SkillCreation, pathComparison));
         services.AddSingleton(new CreateInstructionFile(InstructionFileCreation));
         services.AddSingleton(new DeleteSkill(SkillTrash, Time));
+        services.AddSingleton<IScionInstallation>(Installation);
+        services.AddSingleton(new ReadUpdateSettings(UpdateSettings));
+        services.AddSingleton(new ChangeUpdateSettings(UpdateSettings));
+        services.AddSingleton(UpdateSession);
+        services.AddSingleton(new UpdateLinks(ReleasesPage));
         services.AddSingleton(new ListSkillFiles(SkillFiles));
         services.AddSingleton(new ReadSkillFile(SkillFiles));
         services.AddSingleton(new ReadInstructionFiles(InstructionFiles));

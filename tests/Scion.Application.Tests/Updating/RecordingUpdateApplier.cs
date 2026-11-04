@@ -6,5 +6,15 @@ internal sealed class RecordingUpdateApplier : IUpdateApplier
 {
     public List<AvailableUpdate> Applied { get; } = [];
 
-    public void ApplyWhenScionExits(AvailableUpdate update) => Applied.Add(update);
+    public UpdateFailedException? Failure { get; set; }
+
+    public void ApplyWhenScionExits(AvailableUpdate update)
+    {
+        if (Failure is not null)
+        {
+            throw Failure;
+        }
+
+        Applied.Add(update);
+    }
 }

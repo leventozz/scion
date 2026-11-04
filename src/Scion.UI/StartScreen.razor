@@ -21,9 +21,13 @@ else if (_overview is not null)
         else
         {
             <header class="start-header">
-                <span class="wordmark">Scion</span>
-                <button type="button" class="button button-secondary" @onclick="AddProjectAsync"><AddIcon />Add project</button>
+                <UpdateCheckPopover />
+                <div class="start-header-actions">
+                    <UpdateEntry />
+                    <button type="button" class="button button-secondary" @onclick="AddProjectAsync"><AddIcon />Add project</button>
+                </div>
             </header>
+            <UpdateDialog />
             <PersonalCard Summary="_overview.Personal" OnOpen="OnOpenPersonal" />
             <hr class="divider" />
             <ul class="project-grid">

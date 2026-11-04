@@ -1,0 +1,112 @@
+@implements IDisposable
+@inject UpdateSession Session
+@inject ReadUpdateSettings ReadSettings
+@inject ChangeUpdateSettings ChangeSettings
+
+@* The wordmark is the way in: it opens the version and the check. Esc and a click outside close it. *@
+<span class="version-menu" @onkeydown="OnKeyDown">
+    <button type="button" class="wordmark wordmark-button" aria-haspopup="true"
+            aria-expanded="@(_open ? "true" : "false")" @onclick="ToggleAsync">Scion</button>
+    @if (_open)
+    {
+        <div class="menu-backdrop" @onclick="Close"></div>
+        <div class="version-popover" role="group" aria-label="Version">
+            <span class="version-title">@UpdateMessages.ScionVersion(Session.CurrentVersion)</span>
+            @switch (_status)
+            {
+                case CheckStatus.Checking:
+                    <span class="version-status">@UpdateMessages.Checking</span>
+                    break;
+                case CheckStatus.UpToDate:
+                    <span class="version-status">@UpdateMessages.UpToDate</span>
+                    break;
+                case CheckStatus.OnlyInstalledBuilds:
+                    <span class="version-status">@UpdateMessages.OnlyInstalledBuilds</span>
+                    break;
+                case CheckStatus.Failed:
+                    <span class="version-status">
+                        <span class="version-status-problem">@UpdateMessages.CheckFailed</span>
+                        <button type="button" class="text-action" @onclick="CheckAsync">@UpdateMessages.TryAgain</button>
+                    </span>
+                    break;
+            }
+            <div class="version-separator" role="separator"></div>
+            <button type="button" class="version-action" disabled="@(_status == CheckStatus.Checking)" @onclick="CheckAsync">@UpdateMessages.CheckForUpdates</button>
+            <label class="version-setting">
+                <input type="checkbox" class="checkbox" checked="@_checkWhenScionStarts" @onchange="ChangeSettingAsync" />
+                <span>@UpdateMessages.CheckWhenScionStarts</span>
+            </label>
+        </div>
+    }
+</span>
+
+@code {
+    private enum CheckStatus
+    {
+        None,
+        Checking,
+        UpToDate,
+        OnlyInstalledBuilds,
+        Failed,
+    }
+
+    private bool _open;
+    private bool _disposed;
+    private bool _checkWhenScionStarts = true;
+    private CheckStatus _status;
+
+    public void Dispose() => _disposed = true;
+
+    private async Task ToggleAsync()
+    {
+        if (_open)
+        {
+            Close();
+            return;
+        }
+
+        _open = true;
+        _status = CheckStatus.None;
+        _checkWhenScionStarts = (await ReadSettings.ExecuteAsync()).CheckWhenScionStarts;
+    }
+
+    private void Close() => _open = false;
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (_open && args.Key == "Escape")
+        {
+            Close();
+        }
+    }
+
+    private async Task CheckAsync()
+    {
+        _status = CheckStatus.Checking;
+        var result = await Session.ManualCheckAsync();
+
+        if (_disposed)
+        {
+            return;
+        }
+
+        _status = !result.IsSuccess ? CheckStatus.Failed : result.Value switch
+        {
+            UpdateCheck.UpToDate => CheckStatus.UpToDate,
+            UpdateCheck.RunningFromSource => CheckStatus.OnlyInstalledBuilds,
+            _ => CheckStatus.None,
+        };
+
+        // An update that was found is the dialog's to tell about; the popover has done its part.
+        if (result is { IsSuccess: true, Value: UpdateCheck.Available })
+        {
+            Close();
+        }
+    }
+
+    private async Task ChangeSettingAsync(ChangeEventArgs args)
+    {
+        _checkWhenScionStarts = args.Value is true;
+        await ChangeSettings.ExecuteAsync(new UpdateSettings(_checkWhenScionStarts));
+    }
+}

@@ -28,6 +28,9 @@ jobs:
           }
           "version=$version" >> $env:GITHUB_OUTPUT
           "velopack=$velopack" >> $env:GITHUB_OUTPUT
+          # The one source of the release notes: the update dialog shows them (through the package) and the release page carries the same text.
+          $notes = "docs/releases/$version.md"
+          if (Test-Path $notes) { "notes=$notes" >> $env:GITHUB_OUTPUT } else { "notes=" >> $env:GITHUB_OUTPUT }
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -44,14 +47,11 @@ jobs:
         run: vpk download github --repoUrl $env:REPO_URL --token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pack
-        run: >
-          vpk pack
-          -u Scion
-          -v ${{ steps.versions.outputs.version }}
-          -p publish
-          -e Scion.Host.Desktop.exe
-          --packTitle Scion
-          --icon src/Scion.Host.Desktop/Assets/scion.ico
+        shell: pwsh
+        run: |
+          $arguments = @('pack', '-u', 'Scion', '-v', '${{ steps.versions.outputs.version }}', '-p', 'publish', '-e', 'Scion.Host.Desktop.exe', '--packTitle', 'Scion', '--icon', 'src/Scion.Host.Desktop/Assets/scion.ico')
+          if ('${{ steps.versions.outputs.notes }}') { $arguments += @('--releaseNotes', '${{ steps.versions.outputs.notes }}') }
+          vpk @arguments
 
       - name: Upload
         run: >
@@ -61,3 +61,10 @@ jobs:
           --releaseName "Scion ${{ steps.versions.outputs.version }}"
           --tag v${{ steps.versions.outputs.version }}
           --token ${{ secrets.GITHUB_TOKEN }}
+
+      # Makes sure the release page says what the package says, whether or not vpk wrote the notes itself.
+      - name: Release notes on the release page
+        if: steps.versions.outputs.notes != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit v${{ steps.versions.outputs.version }} --notes-file ${{ steps.versions.outputs.notes }}

@@ -252,4 +252,28 @@ public class AppTests : BunitContext
 
         Assert.Equal(["api"], app.FindAll(".project-name").Select(name => name.TextContent));
     }
+
+    [Fact]
+    public void Looks_for_an_update_when_scion_starts_and_offers_the_one_it_finds()
+    {
+        _registry.Add(new RegisteredProject("/work/api", "api", Noon));
+        _fakes.UpdateFeed.Answer = new Scion.Application.Updating.UpdateCheck.Available(new Scion.Application.Updating.AvailableUpdate("1.1.0", null));
+
+        var app = Render<App>();
+
+        app.WaitForAssertion(() => Assert.Equal("Update to 1.1.0", app.Find(".update-action").TextContent));
+        Assert.Equal(1, _fakes.UpdateFeed.Asked);
+    }
+
+    [Fact]
+    public void Asks_nothing_at_the_start_when_the_user_switched_the_check_off()
+    {
+        _registry.Add(new RegisteredProject("/work/api", "api", Noon));
+        _fakes.UpdateSettings.Saved = new Scion.Application.Updating.UpdateSettings(CheckWhenScionStarts: false);
+
+        var app = Render<App>();
+
+        Assert.Empty(app.FindAll(".update-action"));
+        Assert.Equal(0, _fakes.UpdateFeed.Asked);
+    }
 }

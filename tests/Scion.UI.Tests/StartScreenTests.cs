@@ -602,6 +602,53 @@ public class StartScreenTests : BunitContext
         return screen.FindAll("[role=menuitem]").Single(item => item.TextContent.Trim() == text);
     }
 
+    [Fact]
+    public void The_wordmark_opens_the_version_popover_and_there_is_no_update_action_while_nothing_is_on_offer()
+    {
+        _registry.Add(new RegisteredProject("/work/api", "api", Noon));
+
+        var screen = RenderStartScreen();
+
+        Assert.Equal("Scion", screen.Find("button.wordmark").TextContent);
+        Assert.Empty(screen.FindAll(".update-action"));
+    }
+
+    [Fact]
+    public async Task Puts_the_update_action_in_the_header_right_before_Add_project()
+    {
+        _registry.Add(new RegisteredProject("/work/api", "api", Noon));
+        _fakes.UpdateFeed.Answer = new Scion.Application.Updating.UpdateCheck.Available(new Scion.Application.Updating.AvailableUpdate("1.1.0", null));
+        await _fakes.UpdateSession.StartupCheckAsync();
+
+        var screen = RenderStartScreen();
+
+        var actions = screen.Find(".start-header-actions");
+        Assert.Equal(["Update to 1.1.0", "Add project"], actions.Children.Select(child => child.TextContent.Trim()));
+        Assert.Empty(screen.FindAll(".update-banner"));
+    }
+
+    [Fact]
+    public async Task Shows_the_dialog_about_the_update_once_the_user_opens_it()
+    {
+        _registry.Add(new RegisteredProject("/work/api", "api", Noon));
+        _fakes.UpdateFeed.Answer = new Scion.Application.Updating.UpdateCheck.Available(new Scion.Application.Updating.AvailableUpdate("1.1.0", null));
+        await _fakes.UpdateSession.StartupCheckAsync();
+        var screen = RenderStartScreen();
+
+        screen.Find(".update-action").Click();
+
+        Assert.Equal("Scion 1.1.0 is available", screen.Find(".dialog h2").TextContent);
+    }
+
+    [Fact]
+    public void The_first_run_entry_has_no_version_popover_and_no_update_action()
+    {
+        var screen = RenderStartScreen();
+
+        Assert.Empty(screen.FindAll("button.wordmark"));
+        Assert.Empty(screen.FindAll(".update-action"));
+    }
+
     private IRenderedComponent<StartScreen> RenderStartScreen() =>
         Render<StartScreen>(parameters => parameters
             .Add(p => p.OnOpenProject, opened => _openedProjects.Add(opened))

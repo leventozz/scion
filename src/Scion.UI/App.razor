@@ -1,3 +1,4 @@
+@inject UpdateSession UpdateSession
 <ErrorBoundary @ref="_boundary">
     <ChildContent>
         @if (_opened is null)
@@ -31,6 +32,9 @@
     private Agent _agent = Agent.ClaudeCode;
     private SkillSummary? _skill;
     private bool _startEditing;
+
+    // Looks for an update in the background, as Scion starts; what it finds appears beside "Add project".
+    protected override void OnInitialized() => _ = UpdateSession.StartupCheckAsync();
 
     private void OpenPersonal() => OpenLocation(new Opened(new Location.Personal(), "Personal", FolderMissing: false));
 

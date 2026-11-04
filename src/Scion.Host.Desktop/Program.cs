@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Photino.Blazor;
@@ -16,6 +17,7 @@ using Scion.Infrastructure.FileSystem;
 using Scion.Infrastructure.ProjectRegistry;
 using Scion.Infrastructure.Velopack;
 using Velopack;
+using Velopack.Locators;
 using Scion.UI;
 
 namespace Scion.Host.Desktop;
@@ -188,24 +190,38 @@ internal static class Program
 
     /// <summary>
     /// Scion updates itself from the releases of its GitHub repository; SCION_UPDATE_SOURCE names another repository address or a
-    /// folder of releases, which is how an update is tried without touching GitHub.
+    /// folder of releases, which is how an update is tried without touching GitHub. SCION_TEST_INSTALLED_VERSION makes Scion
+    /// behave as if that version was installed (a fake installation under the scion folder), so an update can be tried from a build.
     /// </summary>
     private static void AddUpdates(IServiceCollection services, string scionHome)
     {
         var source = Environment.GetEnvironmentVariable("SCION_UPDATE_SOURCE") is { Length: > 0 } named
             ? named
             : "https://github.com/leventozz/scion";
-        var updates = new VelopackUpdates(source);
+        var installation = Environment.GetEnvironmentVariable("SCION_TEST_INSTALLED_VERSION") is { Length: > 0 } installedVersion
+            ? new TestVelopackLocator("Scion", installedVersion, Path.Combine(scionHome, ".scion", "test-packages"))
+            : null;
+        var updates = new VelopackUpdates(source, BuildVersion(), installation);
+        var updatesFile = new JsonUpdatesFile(scionHome);
 
         services.AddSingleton<IUpdateFeed>(updates);
         services.AddSingleton<IUpdateDownloader>(updates);
         services.AddSingleton<IUpdateApplier>(updates);
-        services.AddSingleton<IUpdateSettings>(new JsonUpdateSettings(scionHome));
+        services.AddSingleton<IScionInstallation>(updates);
+        services.AddSingleton<IUpdateSettings>(updatesFile);
+        services.AddSingleton<IUpdateCheckRecord>(updatesFile);
         services.AddSingleton<CheckForUpdates>();
         services.AddSingleton<DownloadUpdate>();
         services.AddSingleton<ApplyUpdate>();
+        services.AddSingleton<ReadUpdateSettings>();
         services.AddSingleton<ChangeUpdateSettings>();
+        services.AddSingleton<UpdateSession>();
+        services.AddSingleton(new UpdateLinks(new Uri("https://github.com/leventozz/scion/releases")));
     }
+
+    /// <summary>The version this build was made with: what a Scion that is not installed tells as its version.</summary>
+    private static string BuildVersion() =>
+        typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "0.0.0";
 
     private static void AddShell(IServiceCollection services)
     {

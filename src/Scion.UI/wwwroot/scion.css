@@ -2549,3 +2549,193 @@ textarea.text-field {
     gap: var(--space-sm);
     min-width: 0;
 }
+
+/* Updates: the version popover under the wordmark, the update action and the update dialog. */
+
+.start-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.update-action {
+    color: var(--primary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.update-action:hover,
+.update-action:focus-visible {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.version-menu {
+    position: relative;
+}
+
+.wordmark-button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.wordmark-button:focus-visible {
+    outline: 1px solid rgba(156, 211, 175, 0.5);
+    outline-offset: 4px;
+}
+
+.version-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 11;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: max-content;
+    min-width: 200px;
+    padding: 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container-high);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+}
+
+.version-title {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    line-height: 22px;
+}
+
+.version-status {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.version-status-problem {
+    color: var(--warning);
+    opacity: 0.8;
+}
+
+.version-separator {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--hairline);
+}
+
+.version-action {
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    line-height: 18px;
+    text-align: left;
+}
+
+.version-action:hover:not(:disabled),
+.version-action:focus-visible {
+    color: var(--on-surface);
+    outline: none;
+    text-decoration: underline;
+}
+
+.version-action:disabled {
+    opacity: 0.5;
+}
+
+.version-setting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.version-setting .checkbox {
+    margin: 0;
+}
+
+.dialog-update {
+    width: 480px;
+}
+
+.update-whats-new {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.update-notes-title {
+    margin: 0;
+    color: var(--outline);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.update-notes {
+    max-height: 240px;
+    padding: 12px 16px;
+    overflow-y: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container);
+    font-size: 13px;
+}
+
+.update-notes-empty {
+    margin: 0;
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 20px;
+    opacity: 0.7;
+}
+
+.update-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.update-progress .progress {
+    flex: 1;
+}
+
+.progress-determinate {
+    height: 3px;
+    border-radius: 2px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary);
+}
+
+.update-percent {
+    min-width: 36px;
+    color: var(--outline);
+    font-size: 12px;
+    text-align: right;
+}
+
+.update-failure {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.update-link {
+    align-self: flex-start;
+    margin-left: 22px;
+    text-decoration: underline;
+}

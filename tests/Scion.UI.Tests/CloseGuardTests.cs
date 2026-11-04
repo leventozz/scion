@@ -103,6 +103,61 @@ public class CloseGuardTests
         Assert.Equal(0, _closer.Closed);
     }
 
+    [Fact]
+    public async Task May_leave_when_nothing_is_being_edited()
+    {
+        Assert.True(await _guard.ConfirmLeaveAsync());
+    }
+
+    [Fact]
+    public async Task May_leave_when_the_draft_is_clean_without_asking()
+    {
+        var edit = new Edit { IsDirty = false };
+        using var tracking = _guard.Track(edit.IsDirtyNow, edit.ConfirmLeaveAsync);
+
+        Assert.True(await _guard.ConfirmLeaveAsync());
+        Assert.Equal(0, edit.Asked);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Leaving_with_a_dirty_draft_is_what_the_user_answers(bool discard)
+    {
+        var edit = new Edit { IsDirty = true };
+        using var tracking = _guard.Track(edit.IsDirtyNow, edit.ConfirmLeaveAsync);
+
+        var leaving = _guard.ConfirmLeaveAsync();
+        edit.Answer(discard);
+
+        Assert.Equal(discard, await leaving);
+        Assert.Equal(1, edit.Asked);
+    }
+
+    [Fact]
+    public async Task Does_not_stack_a_second_question_on_one_that_is_open()
+    {
+        var edit = new Edit { IsDirty = true };
+        using var tracking = _guard.Track(edit.IsDirtyNow, edit.ConfirmLeaveAsync);
+        _guard.TryHoldClose();
+
+        Assert.False(await _guard.ConfirmLeaveAsync());
+        Assert.Equal(1, edit.Asked);
+    }
+
+    [Fact]
+    public void Closing_now_closes_the_window_and_that_close_is_not_held_even_with_a_dirty_draft()
+    {
+        var edit = new Edit { IsDirty = true };
+        using var tracking = _guard.Track(edit.IsDirtyNow, edit.ConfirmLeaveAsync);
+
+        _guard.CloseNow();
+
+        Assert.Equal(1, _closer.Closed);
+        Assert.False(_guard.TryHoldClose());
+        Assert.Equal(0, edit.Asked);
+    }
+
     private sealed class Edit
     {
         private readonly TaskCompletionSource<bool> _answer = new();

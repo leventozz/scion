@@ -252,8 +252,9 @@ Every interactive component adheres to unobtrusive utility: visible when needed,
   allowed only for: avatars (the Personal folder tile counts as Personal's
   avatar), the primary button, active-state indicators (the active tab
   underline, the selected segment), checked checkboxes, amber warnings,
-  text selection, the mint number of the third dictionary definition, and
-  the working indicator (the mint sparkle, see below).
+  text selection, the mint number of the third dictionary definition, the
+  working indicator (the mint sparkle, see below) and the update action
+  ("Update to 1.1.0", a mint text action beside Add project).
 - Avatar color: one of nine fixed tones, `palette[FNV-1a(name) % 9]`
   (the `avatar-*` tokens above), so the grid stays calm.
 - Zero counts (e.g. "Codex 0") are dimmed.
@@ -323,6 +324,16 @@ Every interactive component adheres to unobtrusive utility: visible when needed,
   and continues, the same animation, as the cursor at the end of the growing
   text. With `prefers-reduced-motion` it does not animate and shows the still
   shape ✻. The animation is CSS only, so it costs no renders.
+- The version popover opens from the wordmark on the project grid. It is as
+  wide as its content and its lines never wrap: "Scion 1.0.0" (serif), one
+  status line, a separator, "Check for updates", and a checkbox row "Check for
+  updates when Scion starts" (a checked checkbox may be mint, like every
+  checkbox). Esc and a click outside close it. A failed check shows
+  "Couldn't check for updates." in dim amber with a small "Try again" in the
+  status line. Release notes in the update dialog are rendered Markdown in a
+  scrolling box; without notes the box says "No release notes." in dim text.
+  *Approved by description* (no export for the checkbox row, "Checking…", the
+  check error and "No release notes.").
 - Never label anything "Locations" in the UI. Users see "projects" and
   "Personal".
 - No sidebars, dashboards, statistics, tags or status bars.

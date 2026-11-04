@@ -1,0 +1,6 @@
+@inherits UpdateSessionComponent
+
+@if (Session.Stage != UpdateStage.Idle && Session.Update is { } update)
+{
+    <button type="button" class="text-action update-action" @onclick="Session.OpenDialog">@UpdateMessages.UpdateTo(update.Version)</button>
+}

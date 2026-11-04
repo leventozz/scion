@@ -31,7 +31,7 @@ public class TestsNeverCallARealAiClientTests
     [Fact]
     public void No_test_source_locates_a_real_ai_client()
     {
-        var offenders = TestSources()
+        var offenders = TestSources.Except(RuleFiles)
             .SelectMany(file => Forbidden.Where(rule => rule.IsMatch(File.ReadAllText(file))).Select(rule => $"{file}: {rule}"))
             .ToList();
 
@@ -41,7 +41,7 @@ public class TestsNeverCallARealAiClientTests
     [Fact]
     public void The_app_under_test_always_gets_an_explicit_claude_that_is_never_found_by_searching()
     {
-        var desktopApp = File.ReadAllText(Path.Combine(TestsRoot(), "Scion.Smoke.Tests", "DesktopApp.cs"));
+        var desktopApp = TestSources.Read("Scion.Smoke.Tests", "DesktopApp.cs");
 
         Assert.Contains("startInfo.Environment[\"SCION_CLAUDE_PATH\"] = claudePath ?? NoClaude;", desktopApp);
         Assert.Contains("startInfo.Environment.Remove(\"SCION_CLAUDE_PATH\");", desktopApp);
@@ -51,7 +51,7 @@ public class TestsNeverCallARealAiClientTests
     [Fact]
     public void The_app_under_test_always_gets_an_explicit_codex_that_is_never_found_by_searching()
     {
-        var desktopApp = File.ReadAllText(Path.Combine(TestsRoot(), "Scion.Smoke.Tests", "DesktopApp.cs"));
+        var desktopApp = TestSources.Read("Scion.Smoke.Tests", "DesktopApp.cs");
 
         Assert.Contains("startInfo.Environment[\"SCION_CODEX_PATH\"] = codexPath ?? NoCodex;", desktopApp);
         Assert.Contains("startInfo.Environment.Remove(\"SCION_CODEX_PATH\");", desktopApp);
@@ -83,22 +83,7 @@ public class TestsNeverCallARealAiClientTests
     public void The_rules_leave_the_stand_in_alone(string source) =>
         Assert.DoesNotContain(Forbidden, rule => rule.IsMatch(source));
 
+    private static readonly string[] RuleFiles = [nameof(TestsNeverCallARealAiClientTests) + ".cs"];
+
     private static string Smoke(string client) => Path.Combine(Path.GetTempPath(), $"scion-tests-no-{client}", $"{client}.exe");
-
-    private static IEnumerable<string> TestSources() =>
-        Directory.EnumerateFiles(TestsRoot(), "*.cs", SearchOption.AllDirectories)
-            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
-                && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
-                && Path.GetFileName(file) != nameof(TestsNeverCallARealAiClientTests) + ".cs");
-
-    private static string TestsRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "scion.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("scion.slnx not found."), "tests");
-    }
 }
