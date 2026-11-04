@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\Scion.Infrastructure.FileSystem\Scion.Infrastructure.FileSystem.csproj" />
     <ProjectReference Include="..\..\src\Scion.Infrastructure.LocalClients\Scion.Infrastructure.LocalClients.csproj" />
     <ProjectReference Include="..\..\src\Scion.Infrastructure.ProjectRegistry\Scion.Infrastructure.ProjectRegistry.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.Velopack\Scion.Infrastructure.Velopack.csproj" />
     <ProjectReference Include="..\..\src\Scion.UI\Scion.UI.csproj" />
   </ItemGroup>
 

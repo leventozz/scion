@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="PhotinoX.Blazor" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +20,7 @@
     <ProjectReference Include="..\Scion.Infrastructure.Codex\Scion.Infrastructure.Codex.csproj" />
     <ProjectReference Include="..\Scion.Infrastructure.FileSystem\Scion.Infrastructure.FileSystem.csproj" />
     <ProjectReference Include="..\Scion.Infrastructure.ProjectRegistry\Scion.Infrastructure.ProjectRegistry.csproj" />
+    <ProjectReference Include="..\Scion.Infrastructure.Velopack\Scion.Infrastructure.Velopack.csproj" />
     <ProjectReference Include="..\Scion.UI\Scion.UI.csproj" />
   </ItemGroup>
 

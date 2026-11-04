@@ -8,6 +8,7 @@
     <Project Path="src/Scion.Infrastructure.FileSystem/Scion.Infrastructure.FileSystem.csproj" />
     <Project Path="src/Scion.Infrastructure.LocalClients/Scion.Infrastructure.LocalClients.csproj" />
     <Project Path="src/Scion.Infrastructure.ProjectRegistry/Scion.Infrastructure.ProjectRegistry.csproj" />
+    <Project Path="src/Scion.Infrastructure.Velopack/Scion.Infrastructure.Velopack.csproj" />
     <Project Path="src/Scion.UI/Scion.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
@@ -21,6 +22,7 @@
     <Project Path="tests/Scion.Infrastructure.FileSystem.Tests/Scion.Infrastructure.FileSystem.Tests.csproj" />
     <Project Path="tests/Scion.Infrastructure.LocalClients.Tests/Scion.Infrastructure.LocalClients.Tests.csproj" />
     <Project Path="tests/Scion.Infrastructure.ProjectRegistry.Tests/Scion.Infrastructure.ProjectRegistry.Tests.csproj" />
+    <Project Path="tests/Scion.Infrastructure.Velopack.Tests/Scion.Infrastructure.Velopack.Tests.csproj" />
     <Project Path="tests/Scion.Smoke.Tests/Scion.Smoke.Tests.csproj" />
     <Project Path="tests/Scion.UI.Tests/Scion.UI.Tests.csproj" />
   </Folder>

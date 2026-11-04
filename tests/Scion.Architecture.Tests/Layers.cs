@@ -7,6 +7,7 @@ using Scion.Infrastructure.Codex;
 using Scion.Infrastructure.FileSystem;
 using Scion.Infrastructure.LocalClients;
 using Scion.Infrastructure.ProjectRegistry;
+using Scion.Infrastructure.Velopack;
 
 namespace Scion.Architecture.Tests;
 
@@ -20,13 +21,14 @@ internal static class Layers
     public const string HostNamespace = "Scion.Host";
     public const string LocalClientsNamespace = "Scion.Infrastructure.LocalClients";
 
-    /// <summary>The adapters: infrastructure that plugs one detail (a disk layout, a registry file, an AI client) into a port.</summary>
+    /// <summary>The adapters: infrastructure that plugs one detail (a disk layout, a registry file, an AI client, an update mechanism) into a port.</summary>
     public static readonly string[] AdapterNamespaces =
     [
         "Scion.Infrastructure.FileSystem",
         "Scion.Infrastructure.ProjectRegistry",
         "Scion.Infrastructure.ClaudeCode",
         "Scion.Infrastructure.Codex",
+        "Scion.Infrastructure.Velopack",
     ];
 
     /// <summary>Libraries that only an outer layer may use.</summary>
@@ -38,6 +40,7 @@ internal static class Layers
         "Microsoft.Extensions",
         "Photino",
         "Anthropic",
+        "Velopack",
     ];
 
     public static Assembly Domain { get; } = typeof(Agent).Assembly;
@@ -55,15 +58,17 @@ internal static class Layers
 
     public static Assembly ProjectRegistry { get; } = typeof(JsonProjectRegistry).Assembly;
 
+    public static Assembly Velopack { get; } = typeof(VelopackUpdates).Assembly;
+
     public static Assembly Ui { get; } = typeof(Scion.UI.CopyPlace).Assembly;
 
     public static IEnumerable<object[]> NonHostAssemblies() =>
-        [[Domain], [Application], [FileSystem], [ProjectRegistry], [ClaudeCode], [Codex], [LocalClients], [Ui]];
+        [[Domain], [Application], [FileSystem], [ProjectRegistry], [ClaudeCode], [Codex], [Velopack], [LocalClients], [Ui]];
 
     public static IEnumerable<object[]> InfrastructureAssemblies() =>
-        [[FileSystem], [ProjectRegistry], [ClaudeCode], [Codex], [LocalClients]];
+        [[FileSystem], [ProjectRegistry], [ClaudeCode], [Codex], [Velopack], [LocalClients]];
 
-    public static IEnumerable<object[]> AdapterAssemblies() => [[FileSystem], [ProjectRegistry], [ClaudeCode], [Codex]];
+    public static IEnumerable<object[]> AdapterAssemblies() => [[FileSystem], [ProjectRegistry], [ClaudeCode], [Codex], [Velopack]];
 
     /// <summary>Names of the assemblies this assembly was compiled against.</summary>
     public static IReadOnlyList<string> ReferencesOf(Assembly assembly) =>

@@ -8,11 +8,14 @@ using Scion.Application.Editing;
 using Scion.Application.Projects;
 using Scion.Application.Skills;
 using Scion.Application.Skills.Copying;
+using Scion.Application.Updating;
 using Scion.Application.Viewing;
 using Scion.Infrastructure.ClaudeCode;
 using Scion.Infrastructure.Codex;
 using Scion.Infrastructure.FileSystem;
 using Scion.Infrastructure.ProjectRegistry;
+using Scion.Infrastructure.Velopack;
+using Velopack;
 using Scion.UI;
 
 namespace Scion.Host.Desktop;
@@ -22,6 +25,10 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        // The updater starts Scion with special arguments after an install or an update; this must come before anything else.
+        // It is called here, not from a helper in another assembly: vpk looks for this call in the entry assembly when it packs.
+        VelopackApp.Build().Run();
+
         var builder = PhotinoBlazorApp.CreateBuilder(args);
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
@@ -52,6 +59,7 @@ internal static class Program
         builder.Services.AddSingleton<ISkillNameSetter, YamlSkillNameSetter>();
         builder.Services.AddSingleton<IAdaptedSkillWriter>(new FileSystemAdaptedSkillWriter(personalRoot, layouts));
         AddAiProviders(builder.Services, userProfile, personalRoot);
+        AddUpdates(builder.Services, ScionHome(userProfile));
         var pathComparison = PathComparisons.For(CurrentPlatform());
         builder.Services.AddSingleton<IFileBackups>(
             new FileSystemFileBackups(ScionHome(userProfile), personalRoot, layouts, instructionLayouts, pathComparison));
@@ -176,6 +184,27 @@ internal static class Program
         services.AddKeyedSingleton<IAiUsageBasisReader>(id, status);
         services.AddKeyedSingleton<ISkillAdapter>(id, new CodexSkillAdapter(executable, status));
         services.AddKeyedSingleton<IAiProviderOwnFiles>(id, new CodexOwnFiles(personalRoot));
+    }
+
+    /// <summary>
+    /// Scion updates itself from the releases of its GitHub repository; SCION_UPDATE_SOURCE names another repository address or a
+    /// folder of releases, which is how an update is tried without touching GitHub.
+    /// </summary>
+    private static void AddUpdates(IServiceCollection services, string scionHome)
+    {
+        var source = Environment.GetEnvironmentVariable("SCION_UPDATE_SOURCE") is { Length: > 0 } named
+            ? named
+            : "https://github.com/leventozz/scion";
+        var updates = new VelopackUpdates(source);
+
+        services.AddSingleton<IUpdateFeed>(updates);
+        services.AddSingleton<IUpdateDownloader>(updates);
+        services.AddSingleton<IUpdateApplier>(updates);
+        services.AddSingleton<IUpdateSettings>(new JsonUpdateSettings(scionHome));
+        services.AddSingleton<CheckForUpdates>();
+        services.AddSingleton<DownloadUpdate>();
+        services.AddSingleton<ApplyUpdate>();
+        services.AddSingleton<ChangeUpdateSettings>();
     }
 
     private static void AddShell(IServiceCollection services)

@@ -128,5 +128,8 @@ public class DependencyRuleTests
         Assert.Contains("Scion.Infrastructure.LocalClients", Layers.ReferencesOf(Layers.Codex));
         Assert.NotEmpty(Types.InAssembly(Layers.Codex).That().HaveDependencyOn(Layers.LocalClientsNamespace).GetTypes());
         Assert.NotEmpty(Types.InAssembly(Layers.Codex).That().HaveDependencyOn(Layers.ApplicationNamespace).GetTypes());
+        Assert.Contains("Velopack", Layers.ReferencesOf(Layers.Velopack));
+        Assert.NotEmpty(Types.InAssembly(Layers.Velopack).That().HaveDependencyOn("Velopack").GetTypes());
+        Assert.NotEmpty(Types.InAssembly(Layers.Velopack).That().HaveDependencyOn(Layers.ApplicationNamespace).GetTypes());
     }
 }
