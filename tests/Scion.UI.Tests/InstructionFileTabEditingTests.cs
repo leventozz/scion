@@ -395,7 +395,7 @@ public class InstructionFileTabEditingTests : BunitContext
     }
 
     [Fact]
-    public void Closing_the_window_with_a_dirty_draft_is_held_and_Discard_closes_it()
+    public async Task Closing_the_window_with_a_dirty_draft_is_held_and_Discard_closes_it()
     {
         var screen = OpenInstructionTab();
         Edit(screen, "./CLAUDE.md");
@@ -407,7 +407,8 @@ public class InstructionFileTabEditingTests : BunitContext
 
         ClickDialogButton(screen, "Discard changes");
 
-        screen.WaitForAssertion(() => Assert.Equal(1, _fakes.WindowCloser.Closed));
+        await _fakes.WindowCloser.WhenClosed;
+        Assert.Equal(1, _fakes.WindowCloser.Closed);
     }
 
     [Fact]

@@ -630,7 +630,7 @@ public class SkillPageEditingTests : BunitContext
     }
 
     [Fact]
-    public void Discarding_after_a_held_close_closes_the_window()
+    public async Task Discarding_after_a_held_close_closes_the_window()
     {
         var page = RenderPage();
         StartEditing(page);
@@ -640,7 +640,8 @@ public class SkillPageEditingTests : BunitContext
 
         ClickDialogButton(page, "Discard changes");
 
-        page.WaitForAssertion(() => Assert.Equal(1, _fakes.WindowCloser.Closed));
+        await _fakes.WindowCloser.WhenClosed;
+        Assert.Equal(1, _fakes.WindowCloser.Closed);
     }
 
     [Fact]
