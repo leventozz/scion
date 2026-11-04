@@ -1,0 +1,13 @@
+@* The body of a SKILL.md (what is below its frontmatter): rendered, or a calm note when there is nothing to render. *@
+@if (string.IsNullOrWhiteSpace(Text))
+{
+    <div class="file-view-empty"><p class="skill-no-instructions">This skill has no instructions yet.</p></div>
+}
+else
+{
+    <MarkdownView Text="@Text" />
+}
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+}

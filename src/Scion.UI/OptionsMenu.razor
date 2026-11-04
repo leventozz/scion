@@ -1,0 +1,42 @@
+<span class="options" @onkeydown="OnKeyDown">
+    <button type="button" class="options-button" aria-label="@Label" aria-haspopup="menu"
+            aria-expanded="@(_open ? "true" : "false")" @ref="_button" @onclick="Toggle"><MoreIcon /></button>
+    @if (_open)
+    {
+        <div class="menu-backdrop" @onclick="CloseAndFocusButtonAsync"></div>
+        <div class="options-menu" role="menu">
+            <CascadingValue Value="this" IsFixed="true">@ChildContent</CascadingValue>
+        </div>
+    }
+</span>
+
+@code {
+    private ElementReference _button;
+    private bool _open;
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Called by the menu items once they are chosen.</summary>
+    internal void Close()
+    {
+        _open = false;
+        StateHasChanged();
+    }
+
+    private void Toggle() => _open = !_open;
+
+    private async Task CloseAndFocusButtonAsync()
+    {
+        _open = false;
+        await _button.FocusAsync();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (_open && args.Key == "Escape")
+        {
+            await CloseAndFocusButtonAsync();
+        }
+    }
+}

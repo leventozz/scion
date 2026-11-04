@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.Codex\Scion.Infrastructure.Codex.csproj" />
+    <!-- Only builds the stand-in executable; the tests start it as a separate process. The real codex is never called. -->
+    <ProjectReference Include="..\Scion.FakeCodex\Scion.FakeCodex.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

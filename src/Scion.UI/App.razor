@@ -1,0 +1,72 @@
+<ErrorBoundary @ref="_boundary">
+    <ChildContent>
+        @if (_opened is null)
+        {
+            <StartScreen OnOpenPersonal="OpenPersonal" OnOpenProject="Open" />
+        }
+        else if (_skill is not null)
+        {
+            <SkillPage Location="_opened.Location" LocationTitle="@_opened.Title" Agent="_agent" Skill="_skill" StartEditing="_startEditing" OnBack="CloseSkill" />
+        }
+        else
+        {
+            <LocationScreen Location="_opened.Location" Title="@_opened.Title" FolderMissing="_opened.FolderMissing"
+                            @bind-Agent="_agent" OnOpenSkill="OpenSkill" OnEditSkill="EditSkill" OnBack="GoBack" />
+        }
+    </ChildContent>
+    <ErrorContent>
+        <ErrorScreen Title="Something went wrong">
+            <Actions>
+                <button type="button" class="button button-secondary" @onclick="Recover">Try again</button>
+            </Actions>
+        </ErrorScreen>
+    </ErrorContent>
+</ErrorBoundary>
+
+@code {
+    private sealed record Opened(Location Location, string Title, bool FolderMissing);
+
+    private ErrorBoundary? _boundary;
+    private Opened? _opened;
+    private Agent _agent = Agent.ClaudeCode;
+    private SkillSummary? _skill;
+    private bool _startEditing;
+
+    private void OpenPersonal() => OpenLocation(new Opened(new Location.Personal(), "Personal", FolderMissing: false));
+
+    private void Open(OpenedProject project) =>
+        OpenLocation(new Opened(new Location.Project(project.Path), project.DisplayName, project.FolderMissing));
+
+    // The agent belongs to the opened location, so a new location starts with Claude again.
+    private void OpenLocation(Opened opened)
+    {
+        _opened = opened;
+        _agent = Agent.ClaudeCode;
+    }
+
+    private void OpenSkill(SkillSummary skill) => ShowSkill(skill, startEditing: false);
+
+    private void EditSkill(SkillSummary skill) => ShowSkill(skill, startEditing: true);
+
+    private void ShowSkill(SkillSummary skill, bool startEditing)
+    {
+        _skill = skill;
+        _startEditing = startEditing;
+    }
+
+    private void CloseSkill()
+    {
+        _skill = null;
+        _startEditing = false;
+    }
+
+    private void GoBack() => _opened = null;
+
+    private void Recover()
+    {
+        _opened = null;
+        _skill = null;
+        _startEditing = false;
+        _boundary?.Recover();
+    }
+}

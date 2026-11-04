@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Scion.Application/Scion.Application.csproj" />
+    <Project Path="src/Scion.Domain/Scion.Domain.csproj" />
+    <Project Path="src/Scion.Host.Desktop/Scion.Host.Desktop.csproj" />
+    <Project Path="src/Scion.Infrastructure.ClaudeCode/Scion.Infrastructure.ClaudeCode.csproj" />
+    <Project Path="src/Scion.Infrastructure.Codex/Scion.Infrastructure.Codex.csproj" />
+    <Project Path="src/Scion.Infrastructure.FileSystem/Scion.Infrastructure.FileSystem.csproj" />
+    <Project Path="src/Scion.Infrastructure.LocalClients/Scion.Infrastructure.LocalClients.csproj" />
+    <Project Path="src/Scion.Infrastructure.ProjectRegistry/Scion.Infrastructure.ProjectRegistry.csproj" />
+    <Project Path="src/Scion.UI/Scion.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Scion.Application.Tests/Scion.Application.Tests.csproj" />
+    <Project Path="tests/Scion.Architecture.Tests/Scion.Architecture.Tests.csproj" />
+    <Project Path="tests/Scion.Domain.Tests/Scion.Domain.Tests.csproj" />
+    <Project Path="tests/Scion.FakeClaude/Scion.FakeClaude.csproj" />
+    <Project Path="tests/Scion.FakeCodex/Scion.FakeCodex.csproj" />
+    <Project Path="tests/Scion.Infrastructure.ClaudeCode.Tests/Scion.Infrastructure.ClaudeCode.Tests.csproj" />
+    <Project Path="tests/Scion.Infrastructure.Codex.Tests/Scion.Infrastructure.Codex.Tests.csproj" />
+    <Project Path="tests/Scion.Infrastructure.FileSystem.Tests/Scion.Infrastructure.FileSystem.Tests.csproj" />
+    <Project Path="tests/Scion.Infrastructure.LocalClients.Tests/Scion.Infrastructure.LocalClients.Tests.csproj" />
+    <Project Path="tests/Scion.Infrastructure.ProjectRegistry.Tests/Scion.Infrastructure.ProjectRegistry.Tests.csproj" />
+    <Project Path="tests/Scion.Smoke.Tests/Scion.Smoke.Tests.csproj" />
+    <Project Path="tests/Scion.UI.Tests/Scion.UI.Tests.csproj" />
+  </Folder>
+</Solution>

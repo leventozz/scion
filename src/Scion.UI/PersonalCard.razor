@@ -1,0 +1,19 @@
+<button type="button" class="personal-card" @onclick="OnOpen">
+    <span class="folder-tile" aria-hidden="true"><FolderIcon /></span>
+    <span class="personal-text">
+        <span class="personal-heading">
+            <span class="personal-name">Personal</span>
+            <span class="personal-home">~</span>
+        </span>
+        <span class="personal-subtitle">Skills available in every project</span>
+    </span>
+    <span class="personal-trailing">
+        <SkillCounts Claude="Summary.ClaudeSkillCount" Codex="Summary.CodexSkillCount" />
+        <ChevronIcon />
+    </span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public PersonalSummary Summary { get; set; } = default!;
+    [Parameter] public EventCallback OnOpen { get; set; }
+}

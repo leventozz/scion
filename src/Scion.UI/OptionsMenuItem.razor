@@ -1,0 +1,14 @@
+<button type="button" role="menuitem" @onclick="ChooseAsync">@ChildContent</button>
+
+@code {
+    [CascadingParameter] private OptionsMenu Menu { get; set; } = default!;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private async Task ChooseAsync()
+    {
+        Menu.Close();
+        await OnClick.InvokeAsync();
+    }
+}

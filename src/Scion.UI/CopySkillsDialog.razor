@@ -1,0 +1,335 @@
+@inject PathComparison PathComparison
+@inject ListSkills ListSkills
+@inject PreviewSkillCopy PreviewSkillCopy
+@inject CopySkills CopySkills
+
+@* The backdrop takes the keys, so Esc still works after a click on it moved the focus there. *@
+<div class="dialog-backdrop" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="copy-dialog-title" tabindex="-1" @ref="_dialog">
+        <header class="dialog-header">
+            <h2 id="copy-dialog-title">Copy skills</h2>
+            <button type="button" class="icon-button dialog-close" aria-label="Close" @onclick="OnClose"><CloseIcon /></button>
+        </header>
+
+        <div class="copy-places">
+            <div class="copy-place-row">
+                <span class="copy-place-label">From</span>
+                @if (Start.FixedSide == CopySide.Source)
+                {
+                    <span class="copy-fixed">@FixedText(_sourcePlace, _sourceAgent)</span>
+                }
+                else
+                {
+                    <CopyPlacePicker Selected="_sourcePlace" OnSelected="SourcePlaceChosenAsync" />
+                    <AgentSwitch Selected="_sourceAgent" SelectedChanged="SourceAgentChosenAsync" />
+                }
+            </div>
+            <div class="copy-place-row">
+                <span class="copy-place-label">To</span>
+                @if (Start.FixedSide == CopySide.Target)
+                {
+                    <span class="copy-fixed">@FixedText(_targetPlace, _targetAgent)</span>
+                }
+                else
+                {
+                    <CopyPlacePicker Selected="_targetPlace" OnSelected="TargetPlaceChosenAsync" />
+                    <AgentSwitch Selected="_targetAgent" SelectedChanged="TargetAgentChosenAsync" />
+                }
+            </div>
+        </div>
+
+        @if (_skills is { Count: > 0 })
+        {
+            <div class="copy-toolbar">
+                <label class="search-field">
+                    <SearchIcon />
+                    <input type="text" class="copy-filter" placeholder="Filter skills…" aria-label="Filter skills"
+                           value="@_filter" @oninput="e => _filter = e.Value?.ToString() ?? string.Empty" />
+                </label>
+                <div class="copy-actions">
+                    @if (_selection.HasConflicts)
+                    {
+                        <button type="button" class="text-action" @onclick="SkipAll">Skip all</button>
+                        <button type="button" class="text-action" @onclick="OverwriteAll">Overwrite all</button>
+                    }
+                    <button type="button" class="text-action" @onclick="SelectAll">Select all</button>
+                </div>
+            </div>
+            <ul class="copy-list">
+                @foreach (var skill in VisibleSkills)
+                {
+                    <li class="copy-row">
+                        <label class="copy-row-main">
+                            <input type="checkbox" class="checkbox" aria-label="@skill.Name"
+                                   checked="@_selection.IsChecked(skill.FolderName)" @onchange="() => Toggle(skill.FolderName)" />
+                            <span class="copy-row-text">
+                                <span class="skill-heading">
+                                    <span class="skill-name">@skill.Name</span>
+                                    @if (skill.Warnings.Count > 0)
+                                    {
+                                        <WarningIcon />
+                                    }
+                                </span>
+                                @if (skill.Description.Length > 0)
+                                {
+                                    <span class="skill-description">@skill.Description</span>
+                                }
+                                @if (_selection.IsConflict(skill.FolderName))
+                                {
+                                    <span class="skill-warning">Already in @_targetPlace!.Name, different content</span>
+                                }
+                                else if (_selection.IsIdentical(skill.FolderName))
+                                {
+                                    <span class="skill-note">Identical in @_targetPlace!.Name</span>
+                                }
+                                @if (_failed.Contains(skill.FolderName))
+                                {
+                                    <span class="skill-warning">Couldn't copy</span>
+                                }
+                            </span>
+                        </label>
+                        @if (_selection.IsConflict(skill.FolderName))
+                        {
+                            <div class="conflict-choice" role="group" aria-label="When @skill.Name already exists">
+                                <button type="button" aria-pressed="@Pressed(skill.FolderName, ConflictResolution.Skip)"
+                                        @onclick="() => _selection.Resolve(skill.FolderName, ConflictResolution.Skip)">Skip</button>
+                                <button type="button" aria-pressed="@Pressed(skill.FolderName, ConflictResolution.Overwrite)"
+                                        @onclick="() => _selection.Resolve(skill.FolderName, ConflictResolution.Overwrite)">Overwrite</button>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        else if (_skills is not null)
+        {
+            <p class="copy-empty">@EmptyText</p>
+        }
+
+        @if (_error is not null)
+        {
+            <p class="copy-error">@_error</p>
+        }
+
+        <footer class="dialog-footer">
+            <span class="copy-summary">@_selection.Summary(_targetPlace?.Name ?? "")</span>
+            <button type="button" class="button button-secondary" @onclick="OnClose">Cancel</button>
+            <button type="button" class="button button-primary" disabled="@(!_selection.CanCopy || _copying)"
+                    @onclick="CopyAsync">@_selection.CopyLabel</button>
+        </footer>
+    </div>
+</div>
+
+@code {
+    private CopySelection _selection = default!;
+    private ElementReference _dialog;
+    private CopyPlace? _sourcePlace;
+    private CopyPlace? _targetPlace;
+    private Agent _sourceAgent;
+    private Agent _targetAgent;
+    private IReadOnlyList<SkillSummary>? _skills;
+    private readonly HashSet<string> _failed = [];
+    private string _filter = "";
+    private string? _error;
+    private bool _copying;
+
+    [Parameter, EditorRequired] public CopyDialogStart Start { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<CopyReport> OnCopied { get; set; }
+
+    private IEnumerable<SkillSummary> VisibleSkills =>
+        _skills!.Where(skill => skill.Name.Contains(_filter.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private string EmptyText => _sourcePlace is null
+        ? "Choose a project to copy from."
+        : $"No {AgentLabels.DisplayName(_sourceAgent)} skills in {_sourcePlace.Name}.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _selection = new CopySelection(PathComparison);
+
+        var fixesTarget = Start.FixedSide == CopySide.Target;
+        (_targetPlace, _targetAgent, _sourcePlace, _sourceAgent) = fixesTarget
+            ? (Start.FixedPlace, Start.FixedAgent, Start.OtherPlace, Start.OtherAgent)
+            : (Start.OtherPlace, Start.OtherAgent, Start.FixedPlace, Start.FixedAgent);
+
+        await ReloadSourceAsync();
+
+        if (Start.CheckedFolder is { } folder && _skills!.Any(skill => skill.FolderName == folder))
+        {
+            _selection.Toggle(folder);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _dialog.FocusAsync();
+        }
+    }
+
+    private static string FixedText(CopyPlace? place, Agent agent) =>
+        $"{place?.Name} · {AgentLabels.DisplayName(agent)}";
+
+    private static string Pressed(ConflictResolution current, ConflictResolution button) =>
+        current == button ? "true" : "false";
+
+    private string Pressed(string folder, ConflictResolution button) =>
+        Pressed(_selection.ResolutionOf(folder), button);
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private async Task SourcePlaceChosenAsync(CopyPlace place)
+    {
+        _sourcePlace = place;
+        await ReloadSourceAsync();
+    }
+
+    private async Task SourceAgentChosenAsync(Agent agent)
+    {
+        _sourceAgent = agent;
+        await ReloadSourceAsync();
+    }
+
+    private async Task TargetPlaceChosenAsync(CopyPlace place)
+    {
+        _targetPlace = place;
+        await TargetChangedAsync();
+    }
+
+    private async Task TargetAgentChosenAsync(Agent agent)
+    {
+        _targetAgent = agent;
+        await TargetChangedAsync();
+    }
+
+    private async Task ReloadSourceAsync()
+    {
+        _selection.Clear();
+        _failed.Clear();
+        _filter = "";
+        _skills = null;
+        SyncSelectionPlaces();
+
+        _skills = _selection.Source is { } source
+            ? await ListSkills.ExecuteAsync(source.Location, source.Agent)
+            : [];
+
+        await PreviewAsync();
+    }
+
+    private async Task TargetChangedAsync()
+    {
+        _selection.ForgetResolutions();
+        _failed.Clear();
+        SyncSelectionPlaces();
+
+        await PreviewAsync();
+    }
+
+    private void SyncSelectionPlaces()
+    {
+        _selection.Source = _sourcePlace is null ? null : new AgentLocation(_sourcePlace.Location, _sourceAgent);
+        _selection.Target = _targetPlace is null ? null : new AgentLocation(_targetPlace.Location, _targetAgent);
+    }
+
+    /// <summary>Finds out which of the listed skills the target already has and whether they match; any listed skill might get checked.</summary>
+    private async Task PreviewAsync()
+    {
+        _error = null;
+        _selection.DifferentInTarget = [];
+        _selection.IdenticalInTarget = [];
+
+        if (_selection.Source is not { } source || _selection.Target is not { } target
+            || _selection.SameSourceAndTarget || _skills is null)
+        {
+            return;
+        }
+
+        var result = await PreviewSkillCopy.ExecuteAsync(source, target, _skills.Select(skill => skill.FolderName).ToList());
+
+        if (result.IsSuccess)
+        {
+            _selection.DifferentInTarget = result.Value.Different;
+            _selection.IdenticalInTarget = result.Value.Identical;
+        }
+        else
+        {
+            _error = CopyMessages.For(result.Error);
+        }
+    }
+
+    private void Toggle(string folder)
+    {
+        _failed.Remove(folder);
+        _selection.Toggle(folder);
+    }
+
+    private void SelectAll() => _selection.CheckAll(VisibleSkills.Select(skill => skill.FolderName));
+
+    private void SkipAll() => _selection.ResolveAllConflicts(ConflictResolution.Skip);
+
+    private void OverwriteAll() => _selection.ResolveAllConflicts(ConflictResolution.Overwrite);
+
+    private async Task CopyAsync()
+    {
+        _error = null;
+        _failed.Clear();
+        _copying = true;
+
+        try
+        {
+            var request = new CopySkillsRequest(
+                _selection.Source!,
+                _skills!.Select(skill => skill.FolderName).Where(_selection.IsChecked).ToList(),
+                _selection.Target!,
+                _selection.Resolutions);
+            var result = await CopySkills.ExecuteAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                _error = CopyMessages.For(result.Error);
+                return;
+            }
+
+            await ShowOutcomeAsync(result.Value);
+        }
+        finally
+        {
+            _copying = false;
+        }
+    }
+
+    private async Task ShowOutcomeAsync(CopyReport report)
+    {
+        var written = report.Skills
+            .Where(skill => skill.Outcome is SkillCopyOutcome.Copied or SkillCopyOutcome.Overwritten)
+            .Select(skill => skill.FolderName)
+            .ToList();
+        var failed = report.Skills.Where(skill => skill.Outcome == SkillCopyOutcome.Failed).Select(skill => skill.FolderName);
+
+        // Whatever was written is reported at once, so a screen behind the dialog can refresh even if another skill failed.
+        if (written.Count > 0)
+        {
+            await OnCopied.InvokeAsync(report);
+        }
+
+        _failed.UnionWith(failed);
+        if (_failed.Count == 0)
+        {
+            await OnClose.InvokeAsync();
+            return;
+        }
+
+        _selection.Uncheck(written);
+        _skills = _skills!.Where(skill => !written.Contains(skill.FolderName)).ToList();
+        await PreviewAsync();
+    }
+}

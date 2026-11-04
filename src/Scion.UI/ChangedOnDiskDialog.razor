@@ -1,0 +1,23 @@
+<ConfirmDialog Title="This file changed on disk" Message="@Message" OnDismiss="OnCancel">
+    <Buttons>
+        <button type="button" class="button button-secondary" @onclick="OnCancel">Cancel</button>
+        @if (Conflict == DiskConflict.Changed)
+        {
+            <button type="button" class="button button-secondary" @onclick="OnReload">Reload</button>
+        }
+        <button type="button" class="button button-secondary" @onclick="OnOverwrite">Overwrite</button>
+    </Buttons>
+</ConfirmDialog>
+
+@code {
+    [Parameter, EditorRequired] public string FileName { get; set; } = "";
+    [Parameter, EditorRequired] public DiskConflict Conflict { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnReload { get; set; }
+    [Parameter] public EventCallback OnOverwrite { get; set; }
+
+    // A deleted file has nothing to reload, so only a changed one offers Reload.
+    private string Message => Conflict == DiskConflict.Deleted
+        ? $"{FileName} was deleted outside Scion after you started editing."
+        : $"{FileName} was changed outside Scion after you started editing.";
+}

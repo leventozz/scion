@@ -1,0 +1,12 @@
+<ConfirmDialog Title="Discard your changes?" Message="@($"Your changes to {FileName} haven't been saved.")" OnDismiss="OnKeepEditing">
+    <Buttons>
+        <button type="button" class="button button-secondary" @onclick="OnDiscard">Discard changes</button>
+        <button type="button" class="button button-primary" @onclick="OnKeepEditing">Keep editing</button>
+    </Buttons>
+</ConfirmDialog>
+
+@code {
+    [Parameter, EditorRequired] public string FileName { get; set; } = "";
+    [Parameter] public EventCallback OnKeepEditing { get; set; }
+    [Parameter] public EventCallback OnDiscard { get; set; }
+}

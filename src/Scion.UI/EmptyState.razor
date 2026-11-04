@@ -1,0 +1,20 @@
+<div class="empty-state">
+    <p class="empty-state-title">No @AgentLabels.DisplayName(Agent) skills yet</p>
+    <p class="empty-state-path">@AgentLabels.SkillsPath(Location, Agent)</p>
+    <div class="empty-state-actions">
+        <button type="button" class="button button-primary" @onclick="OnCopyFrom">@CopyLabel</button>
+        <button type="button" class="button button-secondary" @onclick="OnNewSkill">New skill</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Location Location { get; set; } = default!;
+    [Parameter, EditorRequired] public Agent Agent { get; set; }
+
+    /// <summary>The other agent of this location, when it has skills that could be copied here.</summary>
+    [Parameter] public Agent? OtherAgentWithSkills { get; set; }
+    [Parameter] public EventCallback OnCopyFrom { get; set; }
+    [Parameter] public EventCallback OnNewSkill { get; set; }
+
+    private string CopyLabel => OtherAgentWithSkills is { } other ? $"Copy from {AgentLabels.DisplayName(other)}" : "Copy from…";
+}

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <ApplicationIcon>Assets\scion.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\scion.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PhotinoX.Blazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scion.Application\Scion.Application.csproj" />
+    <ProjectReference Include="..\Scion.Infrastructure.ClaudeCode\Scion.Infrastructure.ClaudeCode.csproj" />
+    <ProjectReference Include="..\Scion.Infrastructure.Codex\Scion.Infrastructure.Codex.csproj" />
+    <ProjectReference Include="..\Scion.Infrastructure.FileSystem\Scion.Infrastructure.FileSystem.csproj" />
+    <ProjectReference Include="..\Scion.Infrastructure.ProjectRegistry\Scion.Infrastructure.ProjectRegistry.csproj" />
+    <ProjectReference Include="..\Scion.UI\Scion.UI.csproj" />
+  </ItemGroup>
+
+</Project>

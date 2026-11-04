@@ -1,0 +1,170 @@
+@inject PrepareNewSkill PrepareNewSkill
+@inject CreateSkill CreateSkill
+@inject IJSRuntime Js
+
+@* The backdrop takes the keys, so Esc still works after a click on it moved the focus there. A click on it closes nothing. *@
+<div class="dialog-backdrop" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="dialog dialog-form" role="dialog" aria-modal="true" aria-labelledby="new-skill-title" tabindex="-1">
+        <header class="dialog-header">
+            <div class="dialog-heading">
+                <h2 id="new-skill-title">New skill</h2>
+                <p class="dialog-subtitle">In @PlaceName · @AgentLabels.DisplayName(Agent)</p>
+            </div>
+            <button type="button" class="icon-button dialog-close" aria-label="Close" @onclick="OnClose"><CloseIcon /></button>
+        </header>
+
+        <div class="field">
+            <label class="field-label" for="new-skill-name">Name</label>
+            <input id="new-skill-name" type="text" class="text-field text-field-name" autocomplete="off" spellcheck="false" @ref="_nameInput"
+                   aria-invalid="@Invalid(NameMessage)" aria-describedby="new-skill-name-note"
+                   value="@_name" @oninput="NameChanged" />
+            @if (NameMessage is not null)
+            {
+                <span id="new-skill-name-note" class="field-problem" role="alert"><WarningIcon />@NameMessage</span>
+            }
+            else
+            {
+                <span id="new-skill-name-note" class="field-hint">Lowercase letters, numbers and hyphens.</span>
+            }
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="new-skill-description">Description</label>
+            <textarea id="new-skill-description" class="text-field" rows="3" spellcheck="true" @ref="_descriptionInput"
+                      placeholder="Generate clean changelog entries from merged branch commits."
+                      aria-invalid="@Invalid(DescriptionMessage)" aria-describedby="new-skill-description-note"
+                      @key="_descriptionField.Generation" value="@_descriptionField.Rendered" @oninput="DescriptionChanged"></textarea>
+            @if (DescriptionMessage is not null)
+            {
+                <span id="new-skill-description-note" class="field-problem" role="alert"><WarningIcon />@DescriptionMessage</span>
+            }
+            else
+            {
+                <span id="new-skill-description-note" class="field-hint">What the skill does and when to use it.</span>
+            }
+        </div>
+
+        <footer class="dialog-footer dialog-footer-end">
+            @if (_createFailed)
+            {
+                <span class="field-problem dialog-footer-message" role="alert"><WarningIcon />@NewSkillMessages.CreateFailed</span>
+            }
+            <button type="button" class="button button-secondary" @onclick="OnClose">Cancel</button>
+            <button type="button" class="button button-primary" disabled="@(!_check.CanCreate || _creating)"
+                    @onclick="CreateAsync">Create</button>
+        </footer>
+    </div>
+</div>
+
+@code {
+    private ElementReference _nameInput;
+    private ElementReference _descriptionInput;
+    private NewSkillForm? _form;
+    private NewSkillCheck _check = new(NewSkillProblem.NameEmpty, NewSkillProblem.DescriptionEmpty);
+    private string _name = "";
+    private string _description = "";
+
+    // The field is given a value only when the app changes the text itself (a line break made a space), never for what was typed.
+    private readonly FieldValue _descriptionField = new("");
+    private int _enterIgnoredForGeneration = -1;
+    private string? _nameTakenWhileCreating;
+    private bool _creating;
+    private bool _createFailed;
+
+    [Parameter, EditorRequired] public Location Location { get; set; } = default!;
+
+    /// <summary>What the user calls the place: the project's display name, or "Personal".</summary>
+    [Parameter, EditorRequired] public string PlaceName { get; set; } = "";
+    [Parameter, EditorRequired] public Agent Agent { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<SkillSummary> OnCreated { get; set; }
+
+    private AgentLocation Place => new(Location, Agent);
+
+    private string? NameMessage => NewSkillMessages.For(_check.NameProblem ?? NewSkillProblem.NameEmpty);
+
+    private string? DescriptionMessage => NewSkillMessages.For(_check.DescriptionProblem ?? NewSkillProblem.DescriptionEmpty);
+
+    protected override async Task OnInitializedAsync() => _form = await PrepareNewSkill.ExecuteAsync(Place);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // A made-again field has lost its listener.
+        if (_enterIgnoredForGeneration != _descriptionField.Generation)
+        {
+            _enterIgnoredForGeneration = _descriptionField.Generation;
+            await Js.InvokeVoidAsync("scion.ignoreEnter", _descriptionInput);
+        }
+
+        if (firstRender)
+        {
+            await _nameInput.FocusAsync();
+        }
+    }
+
+    private static string? Invalid(string? message) => message is null ? null : "true";
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private void NameChanged(ChangeEventArgs args)
+    {
+        _name = args.Value?.ToString() ?? "";
+        Recheck();
+    }
+
+    // Enter is ignored by the browser (scion.ignoreEnter); a pasted line break becomes a space: the description is one line.
+    private void DescriptionChanged(ChangeEventArgs args)
+    {
+        var typed = args.Value?.ToString() ?? "";
+        _descriptionField.Typed(typed);
+        _description = NewSkillDescription.SingleLine(typed);
+        _descriptionField.Offered(_description);
+        Recheck();
+    }
+
+    private void Recheck()
+    {
+        _createFailed = false;
+        var check = _form!.Check(_name, _description);
+        _check = _name == _nameTakenWhileCreating ? check with { NameProblem = NewSkillProblem.NameTaken } : check;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!_check.CanCreate || _creating)
+        {
+            return;
+        }
+
+        _creating = true;
+        _createFailed = false;
+        try
+        {
+            var result = await CreateSkill.ExecuteAsync(Place, _name, _description);
+
+            if (result.IsSuccess)
+            {
+                await OnCreated.InvokeAsync(result.Value);
+            }
+            else if (result.Error == CreateSkillError.AlreadyExists)
+            {
+                _nameTakenWhileCreating = _name;
+                Recheck();
+            }
+            else
+            {
+                _createFailed = true;
+            }
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+}

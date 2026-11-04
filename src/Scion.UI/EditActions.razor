@@ -1,0 +1,18 @@
+<div class="edit-actions">
+    <EditMessage Error="@Error" Note="@Note" />
+    @if (IsDirty)
+    {
+        <span class="unsaved-changes">Unsaved changes</span>
+    }
+    <button type="button" class="button button-secondary" @onclick="OnCancel">Cancel</button>
+    <button type="button" class="button button-primary" disabled="@IsSaving" @onclick="OnSave">Save</button>
+</div>
+
+@code {
+    [Parameter] public bool IsDirty { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string? Note { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+}

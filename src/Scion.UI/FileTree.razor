@@ -1,0 +1,44 @@
+<nav aria-label="Skill files">
+    <ul class="file-tree">
+        @foreach (var (node, depth) in Flatten(Nodes, 0))
+        {
+            @switch (node)
+            {
+                case SkillFileNode.File file:
+                    <li style="--depth:@depth">
+                        <button type="button" class="file-tree-file" aria-current="@(file.RelativePath == Selected ? "true" : null)"
+                                @onclick="() => OnSelect.InvokeAsync(file.RelativePath)">
+                            <FileIcon /><span>@file.Name</span>
+                        </button>
+                    </li>
+                    break;
+                case SkillFileNode.Folder folder:
+                    <li class="file-tree-folder" style="--depth:@depth"><FolderIcon /><span>@folder.Name/</span></li>
+                    break;
+            }
+        }
+    </ul>
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<SkillFileNode> Nodes { get; set; } = [];
+    [Parameter] public string? Selected { get; set; }
+    [Parameter] public EventCallback<string> OnSelect { get; set; }
+
+    // Depth only drives the indent, so the tree is one flat list.
+    private static IEnumerable<(SkillFileNode Node, int Depth)> Flatten(IEnumerable<SkillFileNode> nodes, int depth)
+    {
+        foreach (var node in nodes)
+        {
+            yield return (node, depth);
+
+            if (node is SkillFileNode.Folder folder)
+            {
+                foreach (var child in Flatten(folder.Children, depth + 1))
+                {
+                    yield return child;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,2551 @@
+/* Scion design tokens: see docs/design/DESIGN.md */
+
+@font-face {
+    font-family: "Geist";
+    src: url("fonts/Geist-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Newsreader";
+    src: url("fonts/Newsreader-Variable.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Newsreader";
+    src: url("fonts/Newsreader-Italic-Variable.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Geist Mono";
+    src: url("fonts/GeistMono-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+:root {
+    --surface: #131315;
+    --surface-container-lowest: #0e0e10;
+    --surface-container-low: #1b1b1d;
+    --surface-container: #201f21;
+    --surface-container-high: #2a2a2c;
+    --secondary-container: #344c3e;
+    --on-surface: #e5e1e4;
+    --outline: #8a938b;
+    --outline-variant: #414942;
+    --primary: #9cd3af;
+    --on-primary: #003920;
+    --warning: #f59e0b;
+
+    --surface-bright: #39393b;
+    --hairline: rgba(255, 255, 255, 0.07);
+
+    --avatar-sage-bg: #27392e;
+    --avatar-sage-fg: #86b595;
+    --avatar-slate-bg: #233344;
+    --avatar-slate-fg: #8aaecb;
+    --avatar-rose-bg: #3b2730;
+    --avatar-rose-fg: #c98e9e;
+    --avatar-ochre-bg: #383120;
+    --avatar-ochre-fg: #c7af79;
+    --avatar-lavender-bg: #2f2b42;
+    --avatar-lavender-fg: #ab9ed6;
+    --avatar-teal-bg: #1d3536;
+    --avatar-teal-fg: #71b1ae;
+    --avatar-clay-bg: #3a2924;
+    --avatar-clay-fg: #c39284;
+    --avatar-steel-bg: #28323a;
+    --avatar-steel-fg: #8eabbd;
+    --avatar-moss-bg: #2a3523;
+    --avatar-moss-fg: #93af82;
+
+    --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2.5rem;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    color-scheme: dark;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    color: var(--on-surface);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 22px;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+#app {
+    display: flex;
+    justify-content: center;
+}
+
+.screen {
+    flex: 0 1 580px;
+    min-width: 0;
+    padding: var(--space-xl) var(--space-md);
+}
+
+/* Header */
+
+.screen-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding-bottom: var(--space-lg);
+}
+
+.folder-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid rgba(65, 73, 66, 0.3);
+    background: rgba(52, 76, 62, 0.6);
+    color: var(--primary);
+}
+
+.screen-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.screen-title-line {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+}
+
+.screen-title h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 26px;
+}
+
+.screen-title-home {
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.screen-subtitle {
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+    opacity: 0.7;
+}
+
+/* Agent switch: a bordered segmented control */
+
+.agent-switch {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    border: 1px solid rgba(65, 73, 66, 0.4);
+    border-radius: 6px;
+    background: var(--surface-container-lowest);
+}
+
+.agent-switch button {
+    padding: 2px 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 16px;
+}
+
+.agent-switch button:hover {
+    color: var(--on-surface);
+}
+
+.agent-switch button:focus {
+    outline: none;
+}
+
+.agent-switch button[aria-pressed="true"] {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+/* Content tabs: underlined text */
+
+.tabs {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(65, 73, 66, 0.3);
+}
+
+.tabs button {
+    padding: 0 4px var(--space-sm);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--outline);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 18px;
+}
+
+.tabs button[aria-selected="true"] {
+    border-bottom-color: var(--primary);
+    color: var(--on-surface);
+}
+
+/* Skill list */
+
+.skill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.skill-row {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 14px;
+    border-radius: 6px;
+}
+
+.skill-row:hover {
+    background: var(--surface-container-low);
+}
+
+/* The open button covers the whole row; the content above it lets clicks fall through (like a project card). */
+
+.skill-open {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+}
+
+.skill-open:focus-visible {
+    outline: 1px solid rgba(156, 211, 175, 0.5);
+}
+
+.skill-row > .skill-heading,
+.skill-row > .skill-description,
+.skill-row > .skill-warning {
+    position: relative;
+    pointer-events: none;
+}
+
+.skill-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.skill-name {
+    overflow: hidden;
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 26px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.skill-description {
+    overflow: hidden;
+    padding-top: 2px;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.skill-description.unavailable {
+    font-style: italic;
+}
+
+/* Skill warnings are amber (icon and text), an exception in "Scion Design Rules". */
+
+.skill-warning {
+    padding-top: 2px;
+    color: var(--warning);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.warning-icon {
+    flex-shrink: 0;
+    color: var(--warning);
+}
+
+/* Empty state */
+
+.empty-state {
+    padding: var(--space-xl) 0;
+    text-align: center;
+}
+
+.empty-state p {
+    margin: 0;
+}
+
+.empty-state-title {
+    color: var(--on-surface);
+}
+
+.empty-state-path {
+    padding-top: 4px;
+    color: var(--outline);
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* Buttons: at most one primary per screen, everything else quiet secondary */
+
+.button {
+    display: inline-flex;
+    flex-shrink: 0;
+    white-space: nowrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 16px;
+}
+
+.button:focus-visible {
+    outline: 1px solid rgba(156, 211, 175, 0.5);
+    outline-offset: 1px;
+}
+
+.button-primary {
+    padding: 8px 20px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    line-height: 18px;
+}
+
+.button-primary:hover {
+    opacity: 0.9;
+}
+
+.button-secondary {
+    background: var(--surface-container-high);
+    border-color: var(--hairline);
+    color: var(--on-surface);
+}
+
+.button-secondary:hover {
+    background: var(--surface-bright);
+}
+
+/* Back arrow and project header */
+
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: -6px;
+    padding: 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--outline);
+}
+
+.icon-button:hover {
+    color: var(--on-surface);
+}
+
+.screen-path {
+    display: flex;
+    min-width: 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+/* A path is cut in the middle: the head shrinks with an ellipsis, the last folder never does. */
+
+.path {
+    display: flex;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.path-head {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.path-tail {
+    flex: 0 0 auto;
+}
+
+/* Project avatar: one of nine fixed tones, picked by the project name. */
+
+.avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.avatar-sage { background: var(--avatar-sage-bg); color: var(--avatar-sage-fg); }
+.avatar-slate { background: var(--avatar-slate-bg); color: var(--avatar-slate-fg); }
+.avatar-rose { background: var(--avatar-rose-bg); color: var(--avatar-rose-fg); }
+.avatar-ochre { background: var(--avatar-ochre-bg); color: var(--avatar-ochre-fg); }
+.avatar-lavender { background: var(--avatar-lavender-bg); color: var(--avatar-lavender-fg); }
+.avatar-teal { background: var(--avatar-teal-bg); color: var(--avatar-teal-fg); }
+.avatar-clay { background: var(--avatar-clay-bg); color: var(--avatar-clay-fg); }
+.avatar-steel { background: var(--avatar-steel-bg); color: var(--avatar-steel-fg); }
+.avatar-moss { background: var(--avatar-moss-bg); color: var(--avatar-moss-fg); }
+
+/* Start screen */
+
+.start-screen {
+    flex-basis: 820px;
+}
+
+.start-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-md);
+}
+
+.wordmark {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 26px;
+}
+
+.divider {
+    height: 1px;
+    margin: var(--space-md) 0;
+    border: 0;
+    background: rgba(65, 73, 66, 0.3);
+}
+
+.skill-counts {
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.count-zero {
+    opacity: 0.4;
+}
+
+.chevron-icon {
+    flex-shrink: 0;
+    color: var(--outline-variant);
+}
+
+.personal-card:hover .chevron-icon,
+.project-card:hover .chevron-icon {
+    color: var(--outline);
+}
+
+.personal-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid rgba(65, 73, 66, 0.2);
+    border-radius: 6px;
+    background: var(--surface-container-low);
+    text-align: left;
+}
+
+.personal-card:hover,
+.project-card:hover {
+    background: var(--surface-container);
+}
+
+.personal-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.personal-heading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+}
+
+.personal-name {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 26px;
+}
+
+.personal-home {
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.personal-subtitle {
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.personal-trailing {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: var(--space-md);
+}
+
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.project-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 12px;
+    border: 1px solid rgba(65, 73, 66, 0.2);
+    border-radius: 6px;
+    background: var(--surface-container-low);
+    text-align: left;
+}
+
+.project-card:hover {
+    border-color: rgba(65, 73, 66, 0.4);
+}
+
+/* The open button covers the whole card; the content above it lets clicks fall through. */
+
+.project-open {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+}
+
+.project-open:focus-visible,
+.options-button:focus-visible {
+    outline: 1px solid rgba(156, 211, 175, 0.5);
+}
+
+.project-card-top,
+.project-text,
+.project-footer {
+    position: relative;
+    pointer-events: none;
+}
+
+.project-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.options-button {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--outline);
+    opacity: 0.7;
+    pointer-events: auto;
+}
+
+.options-button:hover,
+.options-button:focus-visible,
+.options-button[aria-expanded="true"] {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--on-surface);
+    opacity: 1;
+}
+
+.menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: transparent;
+}
+
+.options {
+    position: relative;
+    display: inline-flex;
+}
+
+.options-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 11;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 176px;
+    padding: 4px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container-high);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+}
+
+.options-menu button {
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 13px;
+    line-height: 18px;
+    text-align: left;
+}
+
+.options-menu button:hover,
+.options-menu button:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    outline: none;
+}
+
+.options-menu-separator {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--hairline);
+}
+
+.project-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin-top: 10px;
+}
+
+.project-name {
+    overflow: hidden;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-name-input {
+    width: 100%;
+    padding: 0 6px;
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    background: var(--surface-container-lowest);
+    color: var(--on-surface);
+    font-family: var(--font-serif);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
+    outline: none;
+    pointer-events: auto;
+}
+
+.project-name-input:focus {
+    border-color: rgba(156, 211, 175, 0.5);
+}
+
+.project-path {
+    display: flex;
+    min-width: 0;
+    color: var(--outline);
+    font-size: 11px;
+    line-height: 16px;
+}
+
+.project-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: var(--space-sm);
+    border-top: 1px solid rgba(65, 73, 66, 0.15);
+}
+
+/* First run: a dictionary entry for "scion" */
+
+.first-run {
+    max-width: 490px;
+    margin: 0 auto;
+    padding: var(--space-md) 0;
+}
+
+.first-run h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 38px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 48px;
+}
+
+.first-run-pronunciation {
+    margin: 4px 0 var(--space-md);
+    color: var(--outline);
+    font-size: 12px;
+    font-style: italic;
+    line-height: 18px;
+}
+
+.first-run-definitions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    color: rgba(229, 225, 228, 0.75);
+    list-style: none;
+}
+
+.first-run-definitions li {
+    display: flex;
+    gap: 12px;
+}
+
+.definition-current {
+    color: var(--on-surface);
+}
+
+.definition-number {
+    flex-shrink: 0;
+    padding-top: 2px;
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+.first-run-action {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-xl);
+}
+
+/* A project card whose folder is gone: amber, like skill warnings */
+
+.folder-missing {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--warning);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 16px;
+}
+
+/* Error screens */
+
+.error-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 96px;
+    text-align: center;
+}
+
+.error-screen h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 38px;
+}
+
+.error-path {
+    display: inline-flex;
+    max-width: 100%;
+    margin-top: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--surface-container);
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+}
+
+.error-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: var(--space-xl);
+}
+
+.error-note {
+    margin: 12px 0 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+/* Location screen of a project whose folder is gone */
+
+.folder-missing-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px var(--space-md);
+    text-align: center;
+}
+
+.folder-missing-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-md);
+    border-radius: 50%;
+    background: var(--surface-container);
+    color: var(--outline);
+}
+
+.folder-missing-state p {
+    margin: 0 0 var(--space-lg);
+    color: var(--outline);
+}
+
+.error-actions .button {
+    padding: 6px 16px;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    line-height: 18px;
+}
+
+/* Copy skills: header action, row menu, empty state button */
+
+.screen-header-action {
+    margin-left: auto;
+}
+
+.screen-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-left: auto;
+}
+
+.skill-heading .options {
+    margin-left: auto;
+}
+
+.empty-state-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+}
+
+/* Two buttons side by side are the same size, as in the New skill designs. */
+.screen-header-actions .button,
+.empty-state-actions .button {
+    padding: 8px 16px;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    line-height: 18px;
+}
+
+/* Dialog: closed with the x and Esc, never by a click on the backdrop. */
+
+.dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+}
+
+.dialog-backdrop:focus {
+    outline: none;
+}
+
+.dialog {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: 580px;
+    max-width: 100%;
+    max-height: 100%;
+    padding: var(--space-lg);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: #161619;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.dialog:focus {
+    outline: none;
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dialog-header h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 30px;
+}
+
+.dialog-close {
+    margin-left: 0;
+    margin-right: -6px;
+}
+
+.copy-places {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.copy-place-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    min-height: 36px;
+}
+
+.copy-place-label {
+    flex: 0 0 40px;
+    color: var(--outline);
+    font-size: 13px;
+}
+
+.copy-fixed {
+    padding: 0 var(--space-sm);
+    font-size: 14px;
+}
+
+/* Project picker */
+
+.place-picker {
+    position: relative;
+    min-width: 0;
+    flex: 0 1 260px;
+}
+
+.place-picker-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container-low);
+    text-align: left;
+}
+
+.place-picker-button:hover {
+    background: var(--surface-container);
+}
+
+.place-picker-button .avatar,
+.place-picker-button .folder-tile,
+.place-option .avatar,
+.place-option .folder-tile {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+}
+
+.place-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.place-name-empty {
+    color: var(--outline);
+    font-family: var(--font-sans);
+    font-size: 14px;
+}
+
+.place-picker-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 21;
+    width: 360px;
+    max-width: calc(100vw - 2 * var(--space-lg));
+    padding: var(--space-sm);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container-high);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.search-field {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--surface-container-lowest);
+    color: var(--outline);
+}
+
+.search-field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--on-surface);
+    font: inherit;
+    font-size: 13px;
+}
+
+.search-field input:focus {
+    outline: none;
+}
+
+.search-field input::placeholder {
+    color: var(--outline);
+}
+
+.place-list {
+    max-height: 240px;
+    margin: var(--space-sm) 0 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.place-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    text-align: left;
+}
+
+.place-option:hover,
+.place-option:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    outline: none;
+}
+
+.place-option-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.place-option-path {
+    display: flex;
+    flex: 1 1 0;
+    justify-content: flex-end;
+    min-width: 0;
+    color: var(--outline);
+    font-size: 12px;
+}
+
+.place-divider {
+    height: 1px;
+    margin: var(--space-sm) 0;
+    background: var(--hairline);
+}
+
+.place-note {
+    margin: var(--space-sm) 0 0;
+    color: var(--outline);
+    font-size: 12px;
+}
+
+/* Skill list inside the dialog */
+
+.copy-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.copy-toolbar .search-field {
+    flex: 0 1 220px;
+}
+
+.copy-actions {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.text-action {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.text-action:hover,
+.text-action:focus-visible {
+    color: var(--on-surface);
+    outline: none;
+}
+
+.copy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.copy-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: 8px 10px;
+    border-radius: 6px;
+}
+
+.copy-row:hover {
+    background: var(--surface-container-low);
+}
+
+.copy-row-main {
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.copy-row-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.copy-row .skill-name {
+    font-size: 16px;
+    line-height: 24px;
+}
+
+/* Checked checkboxes are mint: an exception listed in "Scion Design Rules". */
+
+.checkbox {
+    appearance: none;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 5px 0 0;
+    border: 1px solid var(--outline-variant);
+    border-radius: 3px;
+    background: var(--surface-container);
+    cursor: pointer;
+}
+
+.checkbox:checked {
+    border-color: var(--primary);
+    background: var(--primary)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%23003920' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+        center / 100% no-repeat;
+}
+
+.checkbox:focus-visible {
+    outline: 1px solid rgba(156, 211, 175, 0.5);
+    outline-offset: 2px;
+}
+
+.conflict-choice,
+.edit-switch {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: 4px;
+    background: var(--surface-container-lowest);
+}
+
+.conflict-choice button,
+.edit-switch button {
+    padding: 2px 10px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.conflict-choice button:hover,
+.edit-switch button:hover {
+    color: var(--on-surface);
+}
+
+.conflict-choice button[aria-pressed="true"],
+.edit-switch button[aria-pressed="true"] {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+/* Identical content: the "Already in B" line, but neutral and dim instead of amber. */
+
+.skill-note {
+    padding-top: 2px;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+    opacity: 0.7;
+}
+
+.copy-empty {
+    margin: 0;
+    padding: var(--space-lg) 0;
+    color: var(--outline);
+    text-align: center;
+}
+
+.copy-error {
+    margin: 0;
+    color: var(--warning);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.dialog-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding-top: var(--space-sm);
+}
+
+.copy-summary {
+    flex: 1;
+    min-width: 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.dialog-footer .button {
+    padding: 8px 16px;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    line-height: 18px;
+}
+
+.dialog-footer .button-primary:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Skill page: header, file tree on the left, file on the right */
+
+.screen.skill-screen {
+    flex-basis: 1200px;
+}
+
+.skill-page-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.skill-screen .screen-title h1 {
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 38px;
+}
+
+.skill-page-description {
+    max-width: 70ch;
+    margin: var(--space-sm) 0 var(--space-md);
+    color: rgba(229, 225, 228, 0.75);
+}
+
+.skill-page-description.unavailable {
+    font-style: italic;
+}
+
+/* A description is at most three lines; "Show more" appears only when it is cut. */
+
+.clamped-text {
+    margin-bottom: var(--space-md);
+}
+
+.clamped-text .skill-page-description {
+    margin-bottom: 4px;
+}
+
+.clamped-text-body.clamped {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+}
+
+.skill-page-header {
+    padding-bottom: var(--space-lg);
+}
+
+.skill-page-header .skill-warning {
+    display: block;
+}
+
+.skill-page-body {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--space-lg);
+}
+
+.skill-page-body-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.skill-page-message {
+    margin: 0;
+    padding: 80px var(--space-md);
+    color: var(--outline);
+    text-align: center;
+}
+
+/* File tree: names exactly as on disk, folders end with a slash. */
+
+.file-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.file-tree li {
+    margin-left: calc(var(--depth, 0) * 14px);
+}
+
+.file-tree-folder {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 8px 10px 2px;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.file-tree-file {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+    text-align: left;
+}
+
+.file-tree-file span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-tree-file:hover,
+.file-tree-file:focus-visible {
+    background: var(--surface-container-low);
+    color: var(--on-surface);
+    outline: none;
+}
+
+.file-tree-file[aria-current="true"] {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+.file-view {
+    min-width: 0;
+    padding: var(--space-lg);
+    border-radius: 8px;
+    background: var(--surface-container-lowest);
+}
+
+.file-view-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 80px 0;
+}
+
+.skill-no-instructions,
+.file-not-shown {
+    margin: 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+/* File contents are plain Geist Mono with line numbers, never syntax-colored. */
+
+.text-file-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--hairline);
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.text-file-lines {
+    padding-top: var(--space-sm);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.text-file-line {
+    display: flex;
+}
+
+.line-number {
+    flex: 0 0 auto;
+    min-width: 4ch;
+    padding-right: var(--space-md);
+    color: var(--outline);
+    opacity: 0.5;
+    text-align: right;
+    user-select: none;
+}
+
+.line-text {
+    min-height: 20px;
+    white-space: pre;
+}
+
+/* Instruction file tab */
+
+.instruction-file + .instruction-file {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--hairline);
+}
+
+.instruction-file-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.instruction-file-bar .text-action {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.instruction-empty {
+    margin: 0;
+    color: var(--outline);
+    opacity: 0.8;
+    text-align: center;
+}
+
+.instruction-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-xl) 0;
+}
+
+/* Rendered Markdown */
+
+.markdown {
+    color: rgba(229, 225, 228, 0.8);
+}
+
+/* Prose keeps a readable line length; tables and code blocks use the whole reading area. */
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6,
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote {
+    max-width: 75ch;
+}
+
+.markdown > :first-child {
+    margin-top: 0;
+}
+
+.markdown > :last-child {
+    margin-bottom: 0;
+}
+
+/*
+   Heading hierarchy: three clearly different sizes, all larger than the 14px body and its bold text, so a heading is never
+   mistaken for a bold paragraph. A heading sits closer to what it introduces than to what came before: more space above
+   than below. H4 to H6 share one size (the body size, in the heading colour).
+*/
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+    margin: 18px 0 6px;
+    color: var(--on-surface);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 22px;
+}
+
+.markdown h1 {
+    margin: 32px 0 12px;
+    font-size: 24px;
+    line-height: 32px;
+}
+
+.markdown h2 {
+    margin: 28px 0 10px;
+    font-size: 19px;
+    line-height: 28px;
+}
+
+.markdown h3 {
+    margin: 22px 0 8px;
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote,
+.markdown .code-block,
+.markdown .markdown-table-scroll {
+    margin: 0 0 12px;
+}
+
+.markdown .markdown-table-scroll {
+    overflow-x: auto;
+}
+
+.markdown ul,
+.markdown ol {
+    padding-left: 22px;
+}
+
+.markdown li + li {
+    margin-top: 4px;
+}
+
+.markdown code {
+    overflow-wrap: anywhere;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--surface-container-low);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.markdown .code-block {
+    padding: 12px;
+    overflow-x: auto;
+    border-radius: 6px;
+    background: var(--surface-container-low);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.markdown .code-block code {
+    overflow-wrap: normal;
+    padding: 0;
+    background: transparent;
+}
+
+.markdown blockquote {
+    padding-left: 12px;
+    border-left: 2px solid var(--outline-variant);
+    color: var(--outline);
+}
+
+.markdown hr {
+    height: 1px;
+    margin: var(--space-md) 0;
+    border: 0;
+    background: var(--hairline);
+}
+
+.markdown .markdown-table {
+    border-collapse: collapse;
+}
+
+.markdown .markdown-table th,
+.markdown .markdown-table td {
+    min-width: 16ch;
+    overflow-wrap: anywhere;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--hairline);
+    text-align: left;
+}
+
+.markdown .markdown-table th {
+    color: var(--outline);
+    font-weight: 500;
+}
+
+.markdown-link {
+    color: var(--on-surface);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.markdown-link:focus-visible {
+    border-radius: 2px;
+    outline: 1px solid rgba(156, 211, 175, 0.5);
+}
+
+::selection {
+    background: var(--secondary-container);
+    color: var(--on-surface);
+}
+
+/* Editing: the buttons next to the title, the editor, the question dialogs. */
+
+.edit-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+    min-width: 0;
+    margin-left: auto;
+}
+
+.edit-message {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--warning);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.unsaved-changes {
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.text-editor {
+    display: flex;
+    min-height: 360px;
+    overflow: auto;
+    padding-top: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.text-editor-gutter {
+    flex: 0 0 auto;
+    min-width: 4ch;
+    margin: 0;
+    padding-right: var(--space-md);
+    color: var(--outline);
+    font: inherit;
+    opacity: 0.5;
+    text-align: right;
+    user-select: none;
+}
+
+.text-editor-input {
+    flex: 1 0 auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    caret-color: var(--primary);
+    color: var(--on-surface);
+    font: inherit;
+    font-variant-ligatures: none;
+    letter-spacing: inherit;
+    overflow: hidden;
+    resize: none;
+    white-space: pre;
+}
+
+.text-editor-input:focus {
+    outline: none;
+}
+
+.dialog-message {
+    margin: 0;
+    color: var(--on-surface);
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 24px;
+    opacity: 0.8;
+}
+
+.dialog-footer-end {
+    justify-content: flex-end;
+}
+
+.instruction-file-bar .edit-switch {
+    margin-left: auto;
+}
+
+.instruction-file-bar .edit-switch + .edit-actions {
+    margin-left: 0;
+}
+
+.text-file-bar + .markdown {
+    margin-top: var(--space-md);
+}
+
+/* New skill: a small form in a dialog. Name and description fields, hints, amber problem lines. */
+
+.dialog-form {
+    width: 480px;
+}
+
+.dialog-heading h2 {
+    margin: 0;
+}
+
+.dialog-subtitle {
+    margin: 2px 0 0;
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    color: var(--on-surface);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.text-field {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container);
+    color: var(--on-surface);
+    font: inherit;
+    font-size: 14px;
+    line-height: 22px;
+}
+
+.text-field:focus {
+    outline: none;
+    border-color: rgba(156, 211, 175, 0.5);
+}
+
+.text-field::placeholder {
+    color: var(--outline);
+    opacity: 0.5;
+}
+
+textarea.text-field {
+    resize: none;
+}
+
+.text-field-name {
+    font-family: var(--font-serif);
+    font-size: 16px;
+}
+
+.field-hint {
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+    opacity: 0.8;
+}
+
+.field-problem {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--warning);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.dialog-footer-message {
+    margin-right: auto;
+}
+
+/* Delete skill dialog: sans title with the skill name in serif italics, calm sans text */
+
+.dialog-delete {
+    width: 460px;
+}
+
+.dialog-delete .dialog-header h2 {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 26px;
+}
+
+.dialog-skill-name {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-style: italic;
+}
+
+.dialog-text {
+    margin: 0;
+    color: var(--on-surface);
+    font-size: 14px;
+    line-height: 22px;
+    opacity: 0.8;
+}
+
+.dialog-context {
+    margin: calc(var(--space-sm) * -1) 0 0;
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+/*
+   Adapt with AI: header and footer stay, the body in between scrolls, so a long form never pushes the title or the
+   buttons out of the window. The review is wide with a side-by-side diff.
+*/
+
+.dialog-adapt {
+    gap: 0;
+    width: 640px;
+    padding: 0;
+}
+
+.dialog-adapt .dialog-header {
+    flex-shrink: 0;
+    padding: var(--space-md) var(--space-lg);
+}
+
+.dialog-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-md);
+    min-height: 0;
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+    overflow-y: auto;
+}
+
+.dialog-adapt .dialog-footer {
+    flex-shrink: 0;
+    padding: var(--space-md) var(--space-lg);
+    border-top: 1px solid var(--hairline);
+}
+
+.dialog-adapt .dialog-footer .button {
+    padding: 6px 16px;
+}
+
+.adapt-instructions {
+    min-height: 84px;
+    font-size: 14px;
+}
+
+.shared-box {
+    padding: var(--space-md);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container-lowest);
+}
+
+.shared-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+}
+
+.shared-title {
+    margin: 0;
+    color: var(--outline);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 16px;
+    text-transform: uppercase;
+}
+
+.shared-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.shared-list li {
+    position: relative;
+    padding-left: 15px;
+    overflow-wrap: anywhere;
+}
+
+.shared-list li::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 0;
+    width: 4px;
+    height: 4px;
+    background: var(--outline);
+    opacity: 0.6;
+}
+
+/* What was left out: its own list, dim, so it is never mistaken for what is sent. */
+.shared-omitted {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: var(--space-sm) 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--outline);
+    font-size: 13px;
+    line-height: 18px;
+    opacity: 0.7;
+}
+
+.shared-omitted li {
+    padding-left: 15px;
+    overflow-wrap: anywhere;
+}
+
+.shared-note {
+    margin: var(--space-md) 0 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.adapt-provider {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.adapt-provider-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.adapt-provider-note {
+    opacity: 0.65;
+}
+
+.provider-action {
+    flex-shrink: 0;
+}
+
+.dialog-footer-stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+}
+
+.dialog-footer-stacked .dialog-footer-message {
+    margin-right: 0;
+}
+
+.dialog-footer-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+}
+
+.adapt-running {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.adapt-running-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.adapt-running-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 22px;
+}
+
+.adapt-elapsed {
+    flex-shrink: 0;
+    color: var(--outline);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+/* The skill file as it is written: read only, a fixed height, scrolled to its end by scion.scrollToEnd. */
+.streaming-text {
+    flex-shrink: 0;
+    height: 200px;
+    margin: 4px 0 0;
+    padding: var(--space-md);
+    overflow: auto;
+    background: var(--surface-container-lowest);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 20px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.streaming-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The cursor is the working indicator itself, inline at the end of the text. */
+.streaming-cursor {
+    display: inline-block;
+    margin-left: 3px;
+    vertical-align: text-bottom;
+}
+
+/*
+   The working indicator: six frames drawn as SVG, shown one at a time. The sequence is · ✢ ✳ ✶ ✻ ✽ and back, ten frames
+   of 120 ms (frames 0 1 2 3 4 5 4 3 2 1), so every shape but the first and the last is shown twice per round. Mint.
+*/
+.sparkle {
+    width: 1.25em;
+    height: 1.25em;
+    color: var(--primary);
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.streaming-empty .sparkle {
+    width: 28px;
+    height: 28px;
+}
+
+.sparkle line {
+    stroke-width: 1.7;
+}
+
+.sparkle-frame {
+    opacity: 0;
+    animation: 1.2s step-end infinite;
+}
+
+.sparkle-frame-0 {
+    animation-name: sparkle-frame-0;
+}
+
+.sparkle-frame-1 {
+    animation-name: sparkle-frame-1;
+}
+
+.sparkle-frame-2 {
+    animation-name: sparkle-frame-2;
+}
+
+.sparkle-frame-3 {
+    animation-name: sparkle-frame-3;
+}
+
+.sparkle-frame-4 {
+    animation-name: sparkle-frame-4;
+}
+
+.sparkle-frame-5 {
+    animation-name: sparkle-frame-5;
+}
+
+@keyframes sparkle-frame-0 {
+    0% { opacity: 1; }
+    10% { opacity: 0; }
+}
+
+@keyframes sparkle-frame-1 {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    20% { opacity: 0; }
+    90% { opacity: 1; }
+}
+
+@keyframes sparkle-frame-2 {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    30% { opacity: 0; }
+    80% { opacity: 1; }
+    90% { opacity: 0; }
+}
+
+@keyframes sparkle-frame-3 {
+    0% { opacity: 0; }
+    30% { opacity: 1; }
+    40% { opacity: 0; }
+    70% { opacity: 1; }
+    80% { opacity: 0; }
+}
+
+@keyframes sparkle-frame-4 {
+    0% { opacity: 0; }
+    40% { opacity: 1; }
+    50% { opacity: 0; }
+    60% { opacity: 1; }
+    70% { opacity: 0; }
+}
+
+@keyframes sparkle-frame-5 {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    60% { opacity: 0; }
+}
+
+/* Without motion the indicator is one still shape, ✻. */
+@media (prefers-reduced-motion: reduce) {
+    .sparkle-frame {
+        animation: none;
+    }
+
+    .sparkle-frame-4 {
+        opacity: 1;
+    }
+}
+
+.progress {
+    position: relative;
+    width: 100%;
+    height: 2px;
+    overflow: hidden;
+    background: var(--outline-variant);
+}
+
+.progress-bar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 30%;
+    background: var(--outline);
+    animation: progress-slide 1.6s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+    from {
+        left: -30%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .progress-bar {
+        left: 0;
+        width: 100%;
+        opacity: 0.5;
+        animation: none;
+    }
+}
+
+/* Review: no padding around the diff, the header and the footer carry their own. */
+
+.dialog-adapt-review {
+    width: min(1120px, 100%);
+    height: min(760px, 100%);
+}
+
+.dialog-adapt-review .dialog-body {
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.review-footer {
+    align-items: flex-end;
+}
+
+.review-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.review-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 0;
+}
+
+/* The diff: removed lines are tinted amber-orange, added lines blue; the mint accent is not used. */
+
+.diff {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--surface-container-lowest);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.diff-head {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface-container);
+}
+
+.diff-title {
+    padding: 8px var(--space-md);
+    color: var(--outline);
+    font-family: var(--font-sans);
+    font-size: 12px;
+}
+
+.diff-title + .diff-title {
+    border-left: 1px solid var(--hairline);
+}
+
+.diff-body {
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-sm);
+    overflow: auto;
+}
+
+.diff-body-editing {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+}
+
+.diff-side {
+    min-width: 0;
+    overflow: auto;
+}
+
+.diff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+}
+
+.diff-cell {
+    display: flex;
+    min-width: 0;
+    color: var(--on-surface);
+}
+
+.diff-number {
+    flex: 0 0 4ch;
+    padding-right: var(--space-sm);
+    color: var(--outline);
+    opacity: 0.6;
+    text-align: right;
+    user-select: none;
+}
+
+.diff-mark {
+    flex: 0 0 2ch;
+    text-align: center;
+    user-select: none;
+}
+
+.diff-text {
+    flex: 1;
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.diff-removed {
+    background: rgba(220, 160, 80, 0.08);
+    color: #f3d9b4;
+}
+
+.diff-removed .diff-mark {
+    color: #dca050;
+}
+
+.diff-added {
+    background: rgba(110, 163, 239, 0.09);
+    color: #cfe0fa;
+}
+
+.diff-added .diff-mark {
+    color: #6fa3ef;
+}
+
+/* The provider picker in the footer of "Adapt with AI". Its list opens upward: the footer is the bottom of the dialog. */
+.provider-picker {
+    position: relative;
+    display: inline-flex;
+}
+
+.provider-picker-trigger {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--on-surface);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.provider-picker-trigger:hover:not(:disabled),
+.provider-picker-trigger:focus-visible {
+    color: var(--primary);
+    outline: none;
+}
+
+.provider-picker-trigger:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.provider-picker-caret {
+    color: var(--outline);
+    font-size: 12px;
+    line-height: 1;
+}
+
+.provider-picker-trigger:hover:not(:disabled) .provider-picker-caret,
+.provider-picker-trigger:focus-visible .provider-picker-caret {
+    color: var(--primary);
+}
+
+.provider-picker-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: transparent;
+}
+
+.provider-picker-list {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 260px;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--surface-container-high);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    list-style: none;
+    outline: none;
+}
+
+.provider-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.provider-option:hover,
+.provider-option.active {
+    background: var(--surface-container);
+}
+
+.provider-option-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.provider-option-name {
+    color: var(--on-surface);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.provider-option-state {
+    color: var(--outline);
+    font-size: 11px;
+    line-height: 16px;
+}
+
+.provider-option[aria-selected="false"] .provider-option-name {
+    color: var(--outline);
+}
+
+.provider-option-check {
+    flex-shrink: 0;
+    color: var(--primary);
+}
+
+.provider-separator {
+    color: var(--outline);
+}
+
+.adapt-provider-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    min-width: 0;
+}

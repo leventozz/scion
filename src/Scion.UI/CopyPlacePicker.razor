@@ -1,0 +1,95 @@
+@inject ListProjects ListProjects
+
+<div class="place-picker">
+    <button type="button" class="place-picker-button" aria-haspopup="true"
+            aria-expanded="@(_open ? "true" : "false")" @onclick="Toggle">
+        @if (Selected is { } selected)
+        {
+            <PlaceMark Place="selected" />
+            <span class="place-name">@selected.Name</span>
+        }
+        else
+        {
+            <span class="place-name place-name-empty">Choose a project</span>
+        }
+        <ChevronDownIcon />
+    </button>
+    @if (_open)
+    {
+        <div class="place-picker-panel" @onkeydown="OnKeyDown" @onkeydown:stopPropagation="true">
+            <label class="search-field">
+                <SearchIcon />
+                <input type="text" class="place-search" placeholder="Search projects…" aria-label="Search projects"
+                       value="@_search" @oninput="e => _search = e.Value?.ToString() ?? string.Empty" />
+            </label>
+            <ul class="place-list">
+                @if (ShowsPersonal)
+                {
+                    <li><button type="button" class="place-option" @onclick="() => Choose(Personal)">
+                            <PlaceMark Place="Personal" /><span class="place-option-name">Personal</span>
+                        </button></li>
+                }
+                @if (ShowsPersonal && VisibleProjects.Count > 0)
+                {
+                    <li class="place-divider" role="separator"></li>
+                }
+                @foreach (var project in VisibleProjects)
+                {
+                    var place = new CopyPlace(project.DisplayName, new Location.Project(project.Path));
+                    <li><button type="button" class="place-option" @onclick="() => Choose(place)">
+                            <PlaceMark Place="place" /><span class="place-option-name">@project.DisplayName</span>
+                            <span class="place-option-path"><PathText Path="@project.Path" /></span>
+                        </button></li>
+                }
+            </ul>
+            @if (_unreadable)
+            {
+                <p class="place-note">Couldn't read your project list</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly CopyPlace Personal = new("Personal", new Location.Personal());
+
+    private IReadOnlyList<ProjectSummary> _projects = [];
+    private bool _unreadable;
+    private bool _open;
+    private string _search = "";
+
+    [Parameter] public CopyPlace? Selected { get; set; }
+    [Parameter] public EventCallback<CopyPlace> OnSelected { get; set; }
+
+    private bool ShowsPersonal => Matches(Personal.Name);
+
+    private IReadOnlyList<ProjectSummary> VisibleProjects =>
+        _projects.Where(project => !project.FolderMissing && Matches(project.DisplayName)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await ListProjects.ExecuteAsync();
+
+        _projects = result.IsSuccess ? result.Value.Projects : [];
+        _unreadable = !result.IsSuccess;
+    }
+
+    private bool Matches(string name) => name.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private void Toggle() => _open = !_open;
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            _open = false;
+        }
+    }
+
+    private async Task Choose(CopyPlace place)
+    {
+        _open = false;
+        _search = "";
+        await OnSelected.InvokeAsync(place);
+    }
+}

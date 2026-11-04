@@ -1,0 +1,15 @@
+<section class="first-run">
+    <h1>scion</h1>
+    <p class="first-run-pronunciation">/ˈsaɪ.ən/ · noun · rhymes with lion</p>
+    <ol class="first-run-definitions">
+        <li><span class="definition-number">1.</span>A young shoot cut from one plant to be grafted onto another.</li>
+        <li class="definition-current"><span class="definition-number">2.</span>A desktop app that grafts your AI skills from one project onto another, so they grow on new roots.</li>
+    </ol>
+    <div class="first-run-action">
+        <button type="button" class="button button-primary" @onclick="OnAddFirstProject">Add your first project</button>
+    </div>
+</section>
+
+@code {
+    [Parameter] public EventCallback OnAddFirstProject { get; set; }
+}

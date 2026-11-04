@@ -1,0 +1,361 @@
+@implements IDisposable
+@inject ListSkillFiles ListSkillFiles
+@inject ReadSkillFile ReadSkillFile
+@inject OpenFileForEditing OpenFileForEditing
+@inject SaveEditedFile SaveEditedFile
+@inject CheckSkillFrontmatter CheckSkillFrontmatter
+@inject TimeProvider Time
+@inject CloseGuard CloseGuard
+@inject IFolderRevealer Revealer
+
+<main class="screen skill-screen">
+    <header class="skill-page-header">
+        <div class="skill-page-title">
+            <button type="button" class="icon-button" aria-label="Back" @onclick="GoBackAsync"><BackIcon /></button>
+            <div class="screen-title">
+                <h1>@_saved.Name</h1>
+                <span class="screen-subtitle">@LocationTitle · @AgentLabels.DisplayName(Agent)</span>
+            </div>
+            @if (_editing is { } editing)
+            {
+                <EditActions IsDirty="editing.IsDirty" IsSaving="editing.IsSaving" Error="@editing.Error" Note="@editing.Note"
+                             OnCancel="CancelEditingAsync" OnSave="SaveWithButtonAsync" />
+            }
+            else if (_tree is not null)
+            {
+                <div class="edit-actions">
+                    <EditMessage Error="@_openError" Note="@_savedNote" />
+                    <button type="button" class="button button-secondary screen-header-action" @onclick="() => Revealer.ShowAsync(_tree.FolderPath)">Show in folder</button>
+                    @if (CanEdit)
+                    {
+                        <button type="button" class="button button-primary" @onclick="StartEditingAsync"><PencilIcon />Edit</button>
+                    }
+                </div>
+            }
+        </div>
+        @if (Summary.Description.Length > 0)
+        {
+            <ClampedText Text="@Summary.Description" Class="skill-page-description" />
+        }
+        else
+        {
+            <p class="skill-page-description unavailable">Description unavailable</p>
+        }
+        @foreach (var warning in Summary.Warnings)
+        {
+            <span class="skill-warning">@SkillWarningMessages.For(warning, Summary)</span>
+        }
+    </header>
+
+    @if (_error is { } error)
+    {
+        <p class="skill-page-message">@MessageFor(error)</p>
+    }
+    else if (_tree is not null)
+    {
+        <div class="skill-page-body @(ShowsTree ? null : "skill-page-body-single")">
+            @if (ShowsTree)
+            {
+                <FileTree Nodes="_tree.Nodes" Selected="@_selected" OnSelect="SelectFileAsync" />
+            }
+            <section class="file-view" aria-label="File content">
+                @if (_editing is { } draft)
+                {
+                    <div class="text-file-bar">
+                        <span class="text-file-path">@_selected</span>
+                        @if (IsSkillFile)
+                        {
+                            <EditPreviewSwitch Mode="draft.Mode" ModeChanged="SetMode" />
+                        }
+                    </div>
+                    @if (draft.Mode == EditMode.Preview)
+                    {
+                        <SkillBody Text="@SkillMarkdown.BodyOf(draft.Draft)" />
+                    }
+                    else
+                    {
+                        <TextEditor Text="@draft.Draft" TextChanged="draft.SetDraft" Label="@_selected" />
+                    }
+                }
+                else
+                {
+                    @switch (_view)
+                    {
+                        case SkillFileView.Markdown markdown:
+                            <SkillBody Text="@markdown.Body" />
+                            break;
+                        case SkillFileView.PlainText plainText:
+                            <TextFileView Path="@_selected" Lines="plainText.Lines" />
+                            break;
+                        case SkillFileView.NotShown notShown:
+                            <div class="file-view-empty">
+                                <p class="file-not-shown">This file can't be shown here.</p>
+                                <button type="button" class="button button-secondary" @onclick="() => Revealer.ShowAsync(notShown.FolderPath)">Show in folder</button>
+                            </div>
+                            break;
+                    }
+                }
+            </section>
+        </div>
+    }
+
+    <EditingDialogs IsEditing="@(_editing is not null)" IsConfirmingDiscard="@(_editing?.IsConfirmingDiscard ?? false)"
+                    Conflict="_editing?.Conflict" FileName="@FileName"
+                    OnSaveShortcut="SaveWithShortcutAsync" OnKeepEditing="() => _editing?.KeepEditing()"
+                    OnDiscard="() => _editing?.Discard()" OnCancelConflict="() => _editing?.CancelConflict()"
+                    OnReload="ReloadAsync" OnOverwrite="OverwriteAsync" />
+</main>
+
+@code {
+    private const string SkillFileName = "SKILL.md";
+
+    [Parameter, EditorRequired] public Location Location { get; set; } = default!;
+    [Parameter, EditorRequired] public string LocationTitle { get; set; } = "";
+    [Parameter, EditorRequired] public Agent Agent { get; set; }
+    [Parameter, EditorRequired] public SkillSummary Skill { get; set; } = default!;
+
+    /// <summary>Opens the page already editing SKILL.md, for "Edit" in the row menu.</summary>
+    [Parameter] public bool StartEditing { get; set; }
+
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    private SkillFileTree? _tree;
+    private SkillViewError? _error;
+    private string? _selected;
+    private SkillFileView? _view;
+
+    // The header as it is on disk; while SKILL.md is being edited it is computed from the draft instead.
+    private SkillSummary _saved = default!;
+    private FileEditing? _editing;
+    private string? _openError;
+    private string? _savedNote;
+    private bool _returnToViewAfterSave;
+
+    // While SKILL.md is edited, the header follows the draft; it is checked once per pause in typing, never per render.
+    private DraftHeaderCheck? _draftHeader;
+    private IDisposable? _closeTracking;
+    private string _lastDraftSeen = "";
+
+    private SkillSummary Summary => _draftHeader?.Current ?? _saved;
+
+    private bool IsSkillFile => _selected == SkillFileName;
+
+    private bool CanEdit => _view is SkillFileView.Markdown or SkillFileView.PlainText;
+
+    private string FileName => _selected is null ? "" : _selected[(_selected.LastIndexOf('/') + 1)..];
+
+    // A folder that holds nothing but SKILL.md has nothing to navigate, so the file takes the whole width.
+    private bool ShowsTree => _tree!.Nodes is not [SkillFileNode.File { Name: SkillFileName }];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _saved = Skill;
+
+        var result = await ListSkillFiles.ExecuteAsync(Location, Agent, Skill.FolderName);
+        if (!result.IsSuccess)
+        {
+            _error = result.Error;
+            return;
+        }
+
+        _tree = result.Value;
+        var first = _tree.Nodes.OfType<SkillFileNode.File>().FirstOrDefault(file => file.Name == SkillFileName)
+            ?? _tree.Nodes.OfType<SkillFileNode.File>().FirstOrDefault();
+        if (first is not null)
+        {
+            await ShowFileAsync(first.RelativePath);
+        }
+
+        if (StartEditing && CanEdit)
+        {
+            await StartEditingAsync();
+        }
+    }
+
+    private async Task GoBackAsync()
+    {
+        if (_editing is null || await _editing.ConfirmLeaveAsync())
+        {
+            await OnBack.InvokeAsync();
+        }
+    }
+
+    private async Task SelectFileAsync(string relativePath)
+    {
+        if (_editing is { } editing)
+        {
+            if (relativePath == _selected || !await editing.ConfirmLeaveAsync())
+            {
+                return;
+            }
+
+            StopEditing();
+        }
+
+        await ShowFileAsync(relativePath);
+    }
+
+    private async Task ShowFileAsync(string relativePath)
+    {
+        _selected = relativePath;
+        _openError = null;
+        _savedNote = null;
+        var result = await ReadSkillFile.ExecuteAsync(Location, Agent, Skill.FolderName, relativePath);
+
+        // A slower read of a file the user has already left must not replace the current one.
+        if (_selected == relativePath)
+        {
+            _view = result.IsSuccess ? result.Value : new SkillFileView.NotShown(_tree!.FolderPath);
+        }
+    }
+
+    private async Task StartEditingAsync()
+    {
+        _openError = null;
+        _savedNote = null;
+        var file = new EditableFile.SkillFile(Location, Agent, Skill.FolderName, _selected!);
+        var editing = new FileEditing(OpenFileForEditing, SaveEditedFile, file);
+
+        if (!await editing.StartAsync())
+        {
+            _openError = editing.Error;
+            return;
+        }
+
+        editing.Changed += OnEditingChanged;
+        _editing = editing;
+        _lastDraftSeen = editing.Draft;
+        _closeTracking = CloseGuardTracking.Track(CloseGuard, editing, InvokeAsync);
+
+        if (IsSkillFile)
+        {
+            _draftHeader = new DraftHeaderCheck(CheckSkillFrontmatter, Time, Skill.FolderName, _saved);
+            _draftHeader.Changed += OnEditingChanged;
+        }
+    }
+
+    private void SetMode(EditMode mode)
+    {
+        if (mode == EditMode.Preview)
+        {
+            _editing?.ShowPreview();
+        }
+        else
+        {
+            _editing?.ShowEditor();
+        }
+    }
+
+    private async Task CancelEditingAsync()
+    {
+        if (_editing is { } editing && await editing.ConfirmLeaveAsync())
+        {
+            await LeaveEditingAsync();
+        }
+    }
+
+    private Task SaveWithButtonAsync() => SaveAsync(returnToView: true);
+
+    private Task SaveWithShortcutAsync() => SaveAsync(returnToView: false);
+
+    private async Task SaveAsync(bool returnToView)
+    {
+        if (_editing is not { IsSaving: false, Conflict: null, IsConfirmingDiscard: false } editing)
+        {
+            return;
+        }
+
+        _returnToViewAfterSave = returnToView;
+        if (await editing.SaveAsync() == SaveOutcome.Saved)
+        {
+            await AfterSavedAsync(editing);
+        }
+    }
+
+    private async Task OverwriteAsync()
+    {
+        if (_editing is { } editing && await editing.OverwriteAsync() == SaveOutcome.Saved)
+        {
+            await AfterSavedAsync(editing);
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_editing is not { } editing)
+        {
+            return;
+        }
+
+        await editing.ReloadAsync();
+        if (IsSkillFile && editing.Error is null)
+        {
+            TakeSavedHeader(editing);
+        }
+    }
+
+    private async Task AfterSavedAsync(FileEditing editing)
+    {
+        if (IsSkillFile)
+        {
+            TakeSavedHeader(editing);
+        }
+
+        if (_returnToViewAfterSave)
+        {
+            var note = editing.Note;
+            await LeaveEditingAsync();
+            _savedNote = note;
+        }
+    }
+
+    // Edit mode ends and the file is read again, because it may have been saved with Ctrl+S on the way.
+    private async Task LeaveEditingAsync()
+    {
+        StopEditing();
+        await ShowFileAsync(_selected!);
+    }
+
+    private void TakeSavedHeader(FileEditing editing)
+    {
+        _saved = CheckSkillFrontmatter.Execute(editing.Original, Skill.FolderName);
+        _lastDraftSeen = editing.Draft;
+        _draftHeader?.Reset(_saved);
+    }
+
+    private void StopEditing()
+    {
+        _closeTracking?.Dispose();
+        _closeTracking = null;
+
+        if (_draftHeader is { } draftHeader)
+        {
+            draftHeader.Changed -= OnEditingChanged;
+            draftHeader.Dispose();
+            _draftHeader = null;
+        }
+
+        if (_editing is { } editing)
+        {
+            editing.Changed -= OnEditingChanged;
+            _editing = null;
+        }
+    }
+
+    private void OnEditingChanged()
+    {
+        if (_draftHeader is not null && _editing is { } editing && editing.Draft != _lastDraftSeen)
+        {
+            _lastDraftSeen = editing.Draft;
+            _draftHeader.Schedule(editing.Draft);
+        }
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string MessageFor(SkillViewError error) => error == SkillViewError.SkillFolderMissing
+        ? "This skill folder no longer exists."
+        : "This skill folder can't be read.";
+
+    public void Dispose() => StopEditing();
+}

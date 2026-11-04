@@ -1,0 +1,8 @@
+<span class="skill-counts"><span class="@ClassOf(Claude)">Claude @Claude</span> · <span class="@ClassOf(Codex)">Codex @Codex</span></span>
+
+@code {
+    [Parameter, EditorRequired] public int Claude { get; set; }
+    [Parameter, EditorRequired] public int Codex { get; set; }
+
+    private static string ClassOf(int count) => count == 0 ? "count-zero" : "count";
+}

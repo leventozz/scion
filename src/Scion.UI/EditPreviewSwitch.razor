@@ -1,0 +1,11 @@
+<div class="edit-switch" role="group" aria-label="View">
+    <button type="button" aria-pressed="@Pressed(EditMode.Edit)" @onclick="() => ModeChanged.InvokeAsync(EditMode.Edit)">Edit</button>
+    <button type="button" aria-pressed="@Pressed(EditMode.Preview)" @onclick="() => ModeChanged.InvokeAsync(EditMode.Preview)">Preview</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EditMode Mode { get; set; }
+    [Parameter] public EventCallback<EditMode> ModeChanged { get; set; }
+
+    private string Pressed(EditMode mode) => Mode == mode ? "true" : "false";
+}

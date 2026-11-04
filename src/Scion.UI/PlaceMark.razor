@@ -1,0 +1,12 @@
+@if (Place.Location is Location.Personal)
+{
+    <span class="folder-tile" aria-hidden="true"><FolderIcon /></span>
+}
+else
+{
+    <ProjectAvatar Name="@Place.Name" />
+}
+
+@code {
+    [Parameter, EditorRequired] public CopyPlace Place { get; set; } = default!;
+}

@@ -1,0 +1,16 @@
+@if (Error is not null)
+{
+    <span class="edit-message" role="alert"><WarningIcon />@Error</span>
+}
+else if (Note is not null)
+{
+    <span class="edit-message" role="status"><WarningIcon />@Note</span>
+}
+
+@code {
+    /// <summary>Why opening or saving failed; wins over <see cref="Note"/>.</summary>
+    [Parameter] public string? Error { get; set; }
+
+    /// <summary>A save that worked but has something to say.</summary>
+    [Parameter] public string? Note { get; set; }
+}

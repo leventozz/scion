@@ -1,0 +1,535 @@
+@implements IDisposable
+@inject AiProviderCatalog Catalog
+@inject CheckAiProvider CheckAiProvider
+@inject CheckAiUsageBasis CheckAiUsageBasis
+@inject ChooseAiProvider ChooseAiProvider
+@inject RememberAiProvider RememberAiProvider
+@inject ListProviderOwnFiles ListProviderOwnFiles
+@inject SignInToAiProvider SignInToAiProvider
+@inject PrepareAdaptation PrepareAdaptation
+@inject AdaptSkill AdaptSkill
+@inject SaveAdaptedSkill SaveAdaptedSkill
+@inject CheckSkillFrontmatter CheckSkillFrontmatter
+@inject IExternalLinks Links
+@inject TimeProvider Time
+
+@* The backdrop takes the keys, so Esc still works after a click on it moved the focus there. A click on it closes nothing. *@
+<div class="dialog-backdrop" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="dialog dialog-adapt @StepClass" role="dialog" aria-modal="true" aria-labelledby="adapt-dialog-title" tabindex="-1" @ref="_dialog">
+        <header class="dialog-header">
+            <h2 id="adapt-dialog-title">@(_flow.Step == AdaptStep.Review ? "Review the adapted skill" : "Adapt with AI")</h2>
+            <button type="button" class="icon-button dialog-close" aria-label="Close" disabled="@_saving" @onclick="DismissAsync"><CloseIcon /></button>
+        </header>
+
+        <div class="dialog-body">
+            @switch (_flow.Step)
+            {
+                case AdaptStep.Running:
+                    <div class="adapt-running">
+                        <div class="adapt-running-head">
+                            <p class="adapt-running-text">@AdaptMessages.Running(Skill.Name, TargetName)</p>
+                            <span class="adapt-elapsed">@AdaptMessages.Elapsed(Time.GetUtcNow() - _flow.StartedAt)</span>
+                        </div>
+                        <div class="progress" role="progressbar" aria-label="Adapting"><div class="progress-bar"></div></div>
+                        <StreamingText Text="@_flow.StreamedText" />
+                    </div>
+                    break;
+
+                case AdaptStep.Review:
+                    <SideBySideDiff Rows="_rows" OriginalTitle="@($"Original · {Source.Name}")" AdaptedTitle="@($"Adapted · {TargetName}")"
+                                    Editing="_flow.Editing" Draft="@_flow.Draft" DraftChanged="EditDraft" />
+                    break;
+
+                default:
+                    @FormBody
+                    break;
+            }
+        </div>
+
+        @switch (_flow.Step)
+        {
+            case AdaptStep.Running:
+                <footer class="dialog-footer dialog-footer-end">
+                    <button type="button" class="button button-secondary" @onclick="CancelAdapting">Cancel</button>
+                </footer>
+                break;
+
+            case AdaptStep.Review:
+                <footer class="dialog-footer review-footer">
+                    <div class="review-info">
+                        <span class="review-note">@AdaptMessages.CopiedUnchanged</span>
+                        @foreach (var warning in _draftHeader!.Current.Warnings)
+                        {
+                            <span class="skill-warning review-warning"><WarningIcon />@SkillWarningMessages.For(warning, _draftHeader.Current)</span>
+                        }
+                        @if (_flow.Adapted!.ExistsInTarget)
+                        {
+                            <span class="field-problem review-problem"><WarningIcon />@AdaptMessages.AlreadyExists(TargetName)</span>
+                        }
+                        @if (_flow.SaveProblem is { } saveProblem)
+                        {
+                            <span class="field-problem" role="alert"><WarningIcon />@AdaptMessages.For(saveProblem)</span>
+                        }
+                    </div>
+                    <div class="dialog-footer-buttons">
+                        <button type="button" class="button button-secondary" disabled="@_saving" @onclick="TryAgain">Try again</button>
+                        @if (!_flow.Editing)
+                        {
+                            <button type="button" class="button button-secondary" disabled="@_saving" @onclick="_flow.EditBeforeSaving">Edit before saving</button>
+                        }
+                        <button type="button" class="button button-primary" disabled="@_saving" @onclick="SaveAsync">@_flow.SaveLabel</button>
+                    </div>
+                </footer>
+                break;
+
+            case AdaptStep.Failed:
+                <footer class="dialog-footer dialog-footer-stacked">
+                    <span class="field-problem dialog-footer-message" role="alert"><WarningIcon />@AdaptMessages.For(_flow.Failure!, Provider)</span>
+                    <div class="dialog-footer-buttons">
+                        <button type="button" class="button button-secondary" @onclick="OnClose">Close</button>
+                        <button type="button" class="button button-secondary" @onclick="TryAgain">Try again</button>
+                    </div>
+                </footer>
+                break;
+
+            default:
+                <footer class="dialog-footer">
+                    <div class="adapt-provider">
+                        <div class="adapt-provider-text">
+                            <div class="adapt-provider-head">
+                                @if (HasChoice)
+                                {
+                                    <AiProviderPicker Providers="Catalog.Providers" States="_flow.ProviderStates" Chosen="Provider"
+                                                      Disabled="_flow.WaitingForSignIn" OnChosen="ChooseProviderAsync" />
+                                }
+                                @if (_flow.WaitingForSignIn)
+                                {
+                                    <span class="adapt-provider-line">@AdaptMessages.WaitingForSignIn</span>
+                                    <button type="button" class="text-action" @onclick="CancelSignIn">Cancel</button>
+                                }
+                                else if (_flow.Provider is { } state)
+                                {
+                                    <span class="adapt-provider-line">@ProviderLine(state)</span>
+                                }
+                            </div>
+                            @if (!_flow.WaitingForSignIn && _flow.Provider == AiProviderState.Ready && Provider.UsageNotes.For(_flow.UsageBasis) is { } note)
+                            {
+                                <span class="adapt-provider-note">@note</span>
+                            }
+                        </div>
+                        @if (!_flow.WaitingForSignIn && _flow.Provider == AiProviderState.NotInstalled)
+                        {
+                            <button type="button" class="button button-secondary provider-action" @onclick="ShowInstallHelpAsync">@AdaptMessages.HowToInstall</button>
+                        }
+                        else if (!_flow.WaitingForSignIn && _flow.Provider == AiProviderState.SignedOut)
+                        {
+                            <button type="button" class="button button-secondary provider-action" @onclick="SignInAsync">@AdaptMessages.SignIn(Provider)</button>
+                        }
+                    </div>
+                    <button type="button" class="button button-secondary" @onclick="OnClose">Cancel</button>
+                    <button type="button" class="button button-primary" disabled="@(!_flow.CanAdapt)" @onclick="AdaptAsync">Adapt</button>
+                </footer>
+                break;
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>The provider that adapts: the one chosen at the start or since. Until the first check has finished, the first of the catalog.</summary>
+    private AiProvider Provider =>
+        _flow?.ChosenProvider is { } chosen ? Catalog.Providers.First(provider => provider.Id == chosen) : Catalog.Default;
+
+    /// <summary>With one provider there is nothing to choose, so no picker is shown.</summary>
+    private bool HasChoice => Catalog.Providers.Count > 1 && _flow.ChosenProvider is not null;
+
+    private readonly CancellationTokenSource _lifetime = new();
+    private AdaptFlow _flow = default!;
+    private ElementReference _dialog;
+    private CancellationTokenSource? _adapting;
+    private CancellationTokenSource? _signingIn;
+    private ITimer? _ticker;
+    private readonly object _progressLock = new();
+    private readonly List<AdaptationProgress> _progressBuffer = [];
+    private bool _progressFlushScheduled;
+    private bool _showAllShared;
+    private DraftHeaderCheck? _draftHeader;
+    private IReadOnlyList<DiffRow> _rows = [];
+    private int _prepareVersion;
+    private int _providerVersion;
+    private IReadOnlyList<ProviderLoadedFile> _ownFiles = [];
+    private bool _saving;
+    private bool _disposed;
+
+    /// <summary>The place the skill comes from, as the user knows it (a project name or "Personal").</summary>
+    [Parameter, EditorRequired] public CopyPlace Source { get; set; } = default!;
+    [Parameter, EditorRequired] public Agent SourceAgent { get; set; }
+    [Parameter, EditorRequired] public SkillSummary Skill { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>The skill was written to the target; the screen behind the dialog may refresh.</summary>
+    [Parameter] public EventCallback<SkillCopyOutcome> OnSaved { get; set; }
+
+    private string TargetName => _flow.TargetPlace?.Name ?? "";
+
+    private string StepClass => _flow.Step switch
+    {
+        AdaptStep.Running => "dialog-adapt-running",
+        AdaptStep.Review => "dialog-adapt-review",
+        _ => "",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _flow = new AdaptFlow(SourceAgent);
+        var states = await CheckProvidersAsync();
+        var chosen = await ChooseAiProvider.ExecuteAsync(states, _lifetime.Token);
+        _flow.ProvidersChecked(states, chosen.Id);
+        await ReadProviderDetailsAsync(chosen);
+    }
+
+    /// <summary>Every provider is checked at once, so the picker can say how each one is doing from the first moment.</summary>
+    private async Task<IReadOnlyDictionary<AiProviderId, AiProviderState>> CheckProvidersAsync()
+    {
+        var checks = await Task.WhenAll(Catalog.Providers.Select(async provider =>
+            (provider.Id, State: await CheckAiProvider.ExecuteAsync(provider.Id, _lifetime.Token))));
+
+        return checks.ToDictionary(check => check.Id, check => check.State);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _dialog.FocusAsync();
+        }
+    }
+
+    private RenderFragment FormBody => @<text>
+        <div class="copy-places">
+            <div class="copy-place-row">
+                <span class="copy-place-label">From</span>
+                <span class="copy-fixed">@Source.Name · @AgentLabels.DisplayName(SourceAgent) · @Skill.Name</span>
+            </div>
+            <div class="copy-place-row">
+                <span class="copy-place-label">To</span>
+                <CopyPlacePicker Selected="_flow.TargetPlace" OnSelected="ChooseTargetAsync" />
+                <AgentSwitch Selected="_flow.TargetAgent" SelectedChanged="ChooseAgentAsync" />
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="field-label" for="adapt-instructions">Extra instructions (optional)</label>
+            <textarea id="adapt-instructions" class="text-field adapt-instructions" rows="3"
+                      placeholder="For example: this project uses PostgreSQL, not MySQL."
+                      value="@_flow.ExtraInstructions" @oninput="EditInstructions"></textarea>
+        </div>
+
+        @if (_flow.TargetProblem is { } problem)
+        {
+            <p class="field-problem target-problem"><WarningIcon />@AdaptMessages.For(problem)</p>
+        }
+
+        @if (_flow.Request is { } request)
+        {
+            <section class="shared-box" aria-label="What will be shared">
+                <div class="shared-head">
+                    <h3 class="shared-title">What will be shared</h3>
+                    @if (request.SharedItems.Count > request.Summary.Count)
+                    {
+                        <button type="button" class="text-action shared-toggle" @onclick="ToggleShowAll">@(_showAllShared ? "Show less" : "Show all")</button>
+                    }
+                </div>
+                <ul class="shared-list">
+                    @if (_showAllShared)
+                    {
+                        @foreach (var item in request.SharedItems)
+                        {
+                            <li>@AdaptMessages.For(item)</li>
+                        }
+                        @foreach (var file in _ownFiles)
+                        {
+                            <li>@AdaptMessages.LoadedBy(file, Provider)</li>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var line in request.Summary)
+                        {
+                            <li>@AdaptMessages.For(line)</li>
+                        }
+                        @foreach (var file in _ownFiles)
+                        {
+                            <li>@AdaptMessages.LoadedBy(file, Provider)</li>
+                        }
+                    }
+                </ul>
+                @if (request.OmittedItems.Count > 0)
+                {
+                    <ul class="shared-omitted" aria-label="Not shared">
+                        @foreach (var item in request.OmittedItems)
+                        {
+                            <li>@AdaptMessages.For(item)</li>
+                        }
+                    </ul>
+                }
+                <p class="shared-note">@AdaptMessages.NeverShared</p>
+            </section>
+        }
+    </text>;
+
+    private async Task ChooseTargetAsync(CopyPlace place)
+    {
+        _showAllShared = false;
+        _flow.ChooseTarget(place);
+        await PrepareAsync();
+    }
+
+    private async Task ChooseAgentAsync(Agent agent)
+    {
+        _showAllShared = false;
+        _flow.ChooseAgent(agent);
+        await PrepareAsync();
+    }
+
+    private void ToggleShowAll() => _showAllShared = !_showAllShared;
+
+    private void EditInstructions(ChangeEventArgs args) => _flow.EditInstructions((string?)args.Value ?? "");
+
+    /// <summary>Reads what would be shared with the chosen target. A slower answer for an earlier choice is dropped.</summary>
+    private async Task PrepareAsync()
+    {
+        if (_flow.TargetPlace is not { } place)
+        {
+            return;
+        }
+
+        var version = ++_prepareVersion;
+        var result = await PrepareAdaptation.ExecuteAsync(
+            new AgentLocation(Source.Location, SourceAgent),
+            Skill.FolderName,
+            new AgentLocation(place.Location, _flow.TargetAgent),
+            place.Name,
+            _lifetime.Token);
+
+        if (version == _prepareVersion && !_disposed)
+        {
+            _flow.Prepared(result);
+        }
+    }
+
+    private async Task AdaptAsync()
+    {
+        if (!_flow.CanAdapt)
+        {
+            return;
+        }
+
+        var request = _flow.Request!;
+        var provider = Provider;
+        _flow.StartAdapting(Time.GetUtcNow());
+        _ticker = Time.CreateTimer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        _adapting = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        var cancellation = _adapting;
+
+        // The provider is noted when the user presses Adapt, not when it is only chosen: it is what was used that counts.
+        await RememberAiProvider.ExecuteAsync(provider.Id, _lifetime.Token);
+        var result = await AdaptSkill.ExecuteAsync(provider.Id, request, new ActionProgress<AdaptationProgress>(OnProgress), cancellation.Token);
+
+        if (_disposed)
+        {
+            return;
+        }
+
+        StopTicker();
+        cancellation.Dispose();
+        _adapting = null;
+        _flow.AdaptationFinished(result);
+        if (_flow.Step == AdaptStep.Review)
+        {
+            ShowReview(request, _flow.Adapted!);
+        }
+    }
+
+    // The provider reports from its own thread, often many times a second. The reports are collected and handed to the
+    // screen in one go, so a burst costs one render, not one per piece.
+    private void OnProgress(AdaptationProgress progress)
+    {
+        lock (_progressLock)
+        {
+            _progressBuffer.Add(progress);
+            if (_progressFlushScheduled)
+            {
+                return;
+            }
+
+            _progressFlushScheduled = true;
+        }
+
+        _ = InvokeAsync(ShowProgress);
+    }
+
+    private void ShowProgress()
+    {
+        AdaptationProgress[] reports;
+        lock (_progressLock)
+        {
+            reports = [.. _progressBuffer];
+            _progressBuffer.Clear();
+            _progressFlushScheduled = false;
+        }
+
+        if (_disposed)
+        {
+            return;
+        }
+
+        foreach (var report in reports)
+        {
+            _flow.Progressed(report);
+        }
+
+        StateHasChanged();
+    }
+
+    private void StopTicker()
+    {
+        _ticker?.Dispose();
+        _ticker = null;
+    }
+
+    private void ShowReview(AdaptationRequest request, AdaptedSkill adapted)
+    {
+        _rows = TextDiff.SideBySide(request.SourceText, adapted.Text);
+        _draftHeader?.Dispose();
+        _draftHeader = new DraftHeaderCheck(CheckSkillFrontmatter, Time, Skill.FolderName, adapted.Check);
+        _draftHeader.Changed += () => InvokeAsync(StateHasChanged);
+    }
+
+    private void CancelAdapting() => _adapting?.Cancel();
+
+    private void TryAgain()
+    {
+        _draftHeader?.Dispose();
+        _draftHeader = null;
+        _flow.TryAgain();
+    }
+
+    private void EditDraft(string text)
+    {
+        _flow.EditDraft(text);
+        _draftHeader!.Schedule(text);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving)
+        {
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var result = await SaveAdaptedSkill.ExecuteAsync(_flow.Request!, _flow.Draft, _flow.Resolution, _lifetime.Token);
+
+            if (result.IsSuccess)
+            {
+                await OnSaved.InvokeAsync(result.Value);
+                await OnClose.InvokeAsync();
+            }
+            else
+            {
+                _flow.SaveRefused(result.Error);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task SignInAsync()
+    {
+        _flow.SignInStarted();
+        _signingIn = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        var cancellation = _signingIn;
+
+        var provider = Provider;
+        var state = await SignInToAiProvider.ExecuteAsync(provider.Id, cancellation.Token);
+
+        if (!_disposed)
+        {
+            cancellation.Dispose();
+            _signingIn = null;
+            _flow.SignInEnded(state);
+            await ReadProviderDetailsAsync(provider);
+        }
+    }
+
+    private async Task ChooseProviderAsync(AiProvider provider)
+    {
+        _flow.ChooseProvider(provider.Id);
+        await ReadProviderDetailsAsync(provider);
+    }
+
+    /// <summary>
+    /// What belongs to the chosen provider: how its client says it is signed in (only a ready provider has a sign-in to ask
+    /// about) and the files its client loads by itself. An answer for a provider that is no longer chosen is dropped.
+    /// </summary>
+    private async Task ReadProviderDetailsAsync(AiProvider provider)
+    {
+        var version = ++_providerVersion;
+        _ownFiles = [];
+        var state = _flow.ProviderStates.GetValueOrDefault(provider.Id);
+
+        var basis = state == AiProviderState.Ready
+            ? await CheckAiUsageBasis.ExecuteAsync(provider.Id, _lifetime.Token)
+            : AiUsageBasis.Unknown;
+        var ownFiles = await ListProviderOwnFiles.ExecuteAsync(provider.Id, _lifetime.Token);
+
+        if (!_disposed && version == _providerVersion)
+        {
+            _flow.UsageBasisChecked(provider.Id, basis);
+            _ownFiles = ownFiles;
+        }
+    }
+
+    // Beside the name of the provider in the picker the line does not say the name again; with one provider it does.
+    private string ProviderLine(AiProviderState state) =>
+        HasChoice
+            ? (state == AiProviderState.Ready ? "· " : "") + AdaptMessages.ProviderDetail(Provider, state)
+            : AdaptMessages.ProviderLine(Provider, state);
+
+    private void CancelSignIn() => _signingIn?.Cancel();
+
+    private Task ShowInstallHelpAsync() => Links.OpenAsync(Provider.InstallHelp);
+
+    // Leaving while an adaptation runs stops it; the other steps simply close. The result of a review is not kept.
+    private Task DismissAsync()
+    {
+        if (_flow.Step == AdaptStep.Running)
+        {
+            CancelAdapting();
+            return Task.CompletedTask;
+        }
+
+        return OnClose.InvokeAsync();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape" && !_saving)
+        {
+            await DismissAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        StopTicker();
+        _lifetime.Cancel();
+        _draftHeader?.Dispose();
+        _lifetime.Dispose();
+    }
+}

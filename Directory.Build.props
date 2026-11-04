@@ -1,0 +1,12 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Authors>Levent Öztürk</Authors>
+    <Product>Scion</Product>
+    <Copyright>Copyright (c) 2026 Levent Öztürk</Copyright>
+  </PropertyGroup>
+
+</Project>

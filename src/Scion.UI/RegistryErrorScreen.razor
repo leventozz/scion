@@ -1,0 +1,49 @@
+@inject StartFresh StartFresh
+
+<ErrorScreen Title="@Title" Path="@_shown.RegistryFile" Note="@Note">
+    <Actions>
+        <button type="button" class="button button-secondary" @onclick="OnTryAgain">Try again</button>
+        @if (_shown.Kind == RegistryFailureKind.Unreadable)
+        {
+            <button type="button" class="button button-primary" @onclick="StartFreshAsync">Start fresh</button>
+        }
+    </Actions>
+</ErrorScreen>
+
+@code {
+    [Parameter, EditorRequired] public RegistryFailure Failure { get; set; } = default!;
+    [Parameter] public EventCallback OnTryAgain { get; set; }
+    [Parameter] public EventCallback OnRecovered { get; set; }
+
+    private RegistryFailure _shown = default!;
+    private RegistryFailure? _lastFailure;
+
+    private string Title => _shown.Kind == RegistryFailureKind.Unreadable
+        ? "Scion couldn't read your project list"
+        : "Scion couldn't save your project list";
+
+    private string? Note => _shown.Kind == RegistryFailureKind.Unreadable ? "Your old file is kept as a backup." : null;
+
+    protected override void OnParametersSet()
+    {
+        if (Failure != _lastFailure)
+        {
+            _lastFailure = Failure;
+            _shown = Failure;
+        }
+    }
+
+    private async Task StartFreshAsync()
+    {
+        var result = await StartFresh.ExecuteAsync();
+
+        if (result.IsSuccess)
+        {
+            await OnRecovered.InvokeAsync();
+        }
+        else
+        {
+            _shown = result.Error;
+        }
+    }
+}

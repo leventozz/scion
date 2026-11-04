@@ -1,0 +1,41 @@
+<li class="skill-row">
+    <button type="button" class="skill-open" aria-label="Open @Skill.Name" @onclick="OnOpen"></button>
+    <div class="skill-heading">
+        <span class="skill-name">@Skill.Name</span>
+        @if (Skill.Warnings.Count > 0)
+        {
+            <WarningIcon />
+        }
+        <OptionsMenu Label="@($"Options for {Skill.Name}")">
+            <OptionsMenuItem OnClick="OnEdit">Edit</OptionsMenuItem>
+            <OptionsMenuItem OnClick="OnCopyTo">Copy to…</OptionsMenuItem>
+            <OptionsMenuItem OnClick="OnAdapt">Adapt with AI…</OptionsMenuItem>
+            @if (Skill.CanBeDeleted)
+            {
+                <OptionsMenuSeparator />
+                <OptionsMenuItem OnClick="OnDelete">Delete</OptionsMenuItem>
+            }
+        </OptionsMenu>
+    </div>
+    @if (Skill.Description.Length > 0)
+    {
+        <span class="skill-description">@Skill.Description</span>
+    }
+    else
+    {
+        <span class="skill-description unavailable">Description unavailable</span>
+    }
+    @foreach (var warning in Skill.Warnings)
+    {
+        <span class="skill-warning">@SkillWarningMessages.For(warning, Skill)</span>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public SkillSummary Skill { get; set; } = default!;
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnCopyTo { get; set; }
+    [Parameter] public EventCallback OnAdapt { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+}

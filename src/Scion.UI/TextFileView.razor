@@ -1,0 +1,20 @@
+<div class="text-file">
+    <div class="text-file-bar">
+        <span class="text-file-path">@Path</span>
+        <span class="text-file-count">@Count</span>
+    </div>
+    <div class="text-file-lines">
+        @for (var index = 0; index < Lines.Count; index++)
+        {
+            var line = Lines[index];
+            <div class="text-file-line"><span class="line-number">@(index + 1)</span><span class="line-text">@line</span></div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Path { get; set; } = "";
+    [Parameter, EditorRequired] public IReadOnlyList<string> Lines { get; set; } = [];
+
+    private string Count => Lines.Count == 1 ? "1 line" : $"{Lines.Count} lines";
+}

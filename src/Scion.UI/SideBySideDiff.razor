@@ -1,0 +1,87 @@
+<div class="diff @(Editing ? "diff-editing" : "")">
+    <div class="diff-head">
+        <span class="diff-title">@OriginalTitle</span>
+        <span class="diff-title">@AdaptedTitle</span>
+    </div>
+    @if (Editing)
+    {
+        <div class="diff-body diff-body-editing">
+            <div class="diff-side">
+                @foreach (var line in OriginalLines)
+                {
+                    <div class="diff-cell">
+                        <span class="diff-number">@line.Number</span>
+                        <span class="diff-mark"></span>
+                        <span class="diff-text">@line.Text</span>
+                    </div>
+                }
+            </div>
+            <div class="diff-side">
+                <TextEditor Text="@Draft" TextChanged="DraftChanged" Label="Adapted SKILL.md" />
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="diff-body">
+            @foreach (var row in Rows)
+            {
+                <div class="diff-row">
+                    @Cell(row.Left)
+                    @Cell(row.Right)
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DiffRow> Rows { get; set; } = [];
+    [Parameter, EditorRequired] public string OriginalTitle { get; set; } = "";
+    [Parameter, EditorRequired] public string AdaptedTitle { get; set; } = "";
+
+    /// <summary>The adapted side is a text editor the user changes (<see cref="Draft"/>) instead of the diff.</summary>
+    [Parameter] public bool Editing { get; set; }
+    [Parameter] public string Draft { get; set; } = "";
+    [Parameter] public EventCallback<string> DraftChanged { get; set; }
+
+    private IEnumerable<DiffLine> OriginalLines => Rows.Where(row => row.Left is not null).Select(row => row.Left!);
+
+    private static RenderFragment Cell(DiffLine? line) => builder =>
+    {
+        if (line is null)
+        {
+            builder.AddMarkupContent(0, "<div class=\"diff-cell diff-empty\"></div>");
+            return;
+        }
+
+        var kind = line.Kind switch
+        {
+            DiffKind.Removed => " diff-removed",
+            DiffKind.Added => " diff-added",
+            _ => "",
+        };
+        var mark = line.Kind switch
+        {
+            DiffKind.Removed => "−",
+            DiffKind.Added => "+",
+            _ => "",
+        };
+
+        builder.OpenElement(1, "div");
+        builder.AddAttribute(2, "class", "diff-cell" + kind);
+        builder.OpenElement(3, "span");
+        builder.AddAttribute(4, "class", "diff-number");
+        builder.AddContent(5, line.Number);
+        builder.CloseElement();
+        builder.OpenElement(6, "span");
+        builder.AddAttribute(7, "class", "diff-mark");
+        builder.AddContent(8, mark);
+        builder.CloseElement();
+        builder.OpenElement(9, "span");
+        builder.AddAttribute(10, "class", "diff-text");
+        builder.AddContent(11, line.Text);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+}

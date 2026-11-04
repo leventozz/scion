@@ -1,0 +1,19 @@
+<main class="screen error-screen">
+    <h1>@Title</h1>
+    @if (Path is not null)
+    {
+        <span class="error-path"><PathText Path="@Path" /></span>
+    }
+    <div class="error-actions">@Actions</div>
+    @if (Note is not null)
+    {
+        <p class="error-note">@Note</p>
+    }
+</main>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Path { get; set; }
+    [Parameter] public string? Note { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+}

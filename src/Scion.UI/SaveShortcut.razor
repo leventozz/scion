@@ -1,0 +1,50 @@
+@implements IAsyncDisposable
+@inject IJSRuntime Js
+
+@code {
+    private DotNetObjectReference<SaveShortcut>? _reference;
+
+    /// <summary>Ctrl+S (Cmd+S on macOS) is only taken over while a file is being edited.</summary>
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Active && _reference is null)
+        {
+            _reference = DotNetObjectReference.Create(this);
+            await Js.InvokeVoidAsync("scion.onSaveShortcut", _reference);
+        }
+        else if (!Active && _reference is not null)
+        {
+            await StopListeningAsync();
+        }
+    }
+
+    /// <summary>Called by the browser when the shortcut is pressed.</summary>
+    [JSInvokable("SaveShortcut")]
+    public Task ReportShortcut() => OnSave.InvokeAsync();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_reference is not null)
+        {
+            await StopListeningAsync();
+        }
+    }
+
+    private async Task StopListeningAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("scion.offSaveShortcut");
+        }
+        catch (JSDisconnectedException)
+        {
+            // The window is closing; there is nothing left to stop listening to.
+        }
+
+        _reference?.Dispose();
+        _reference = null;
+    }
+}

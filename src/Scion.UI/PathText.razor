@@ -1,0 +1,13 @@
+@inject UserHome Home
+
+<span class="path"><span class="path-head">@_head</span><span class="path-tail">@_tail</span></span>
+
+@code {
+    [Parameter, EditorRequired] public string Path { get; set; } = "";
+
+    private string _head = "";
+    private string _tail = "";
+
+    protected override void OnParametersSet() =>
+        (_head, _tail) = DisplayPath.Split(DisplayPath.Abbreviate(Path, Home));
+}

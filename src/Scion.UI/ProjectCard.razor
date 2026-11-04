@@ -1,0 +1,85 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="project-card">
+    @if (!_renaming)
+    {
+        <button type="button" class="project-open" aria-label="Open @Project.DisplayName" @onclick="OnOpen"></button>
+    }
+    <div class="project-card-top">
+        <ProjectAvatar Name="@Project.DisplayName" />
+        <OptionsMenu Label="Project options">
+            <OptionsMenuItem OnClick="StartRename">Rename</OptionsMenuItem>
+            <OptionsMenuItem OnClick="OnRemove">Remove from Scion</OptionsMenuItem>
+        </OptionsMenu>
+    </div>
+    <span class="project-text">
+        @if (_renaming)
+        {
+            <input type="text" class="project-name-input" aria-label="Project name" value="@_draft" onfocus="this.select()"
+                   @ref="_nameInput" @oninput="e => _draft = e.Value?.ToString() ?? string.Empty"
+                   @onkeydown="OnNameKeyDown" @onblur="CommitRenameAsync" />
+        }
+        else
+        {
+            <span class="project-name">@Project.DisplayName</span>
+        }
+        <span class="project-path"><PathText Path="@Project.Path" /></span>
+    </span>
+    <span class="project-footer">
+        @if (Project.FolderMissing)
+        {
+            <span class="folder-missing"><WarningIcon />Folder not found</span>
+        }
+        else
+        {
+            <SkillCounts Claude="Project.ClaudeSkillCount" Codex="Project.CodexSkillCount" />
+        }
+        <ChevronIcon />
+    </span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ProjectSummary Project { get; set; } = default!;
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback<string> OnRename { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+
+    private ElementReference _nameInput;
+    private bool _renaming;
+    private bool _focusNameInput;
+    private string _draft = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusNameInput)
+        {
+            _focusNameInput = false;
+            await _nameInput.FocusAsync();
+        }
+    }
+
+    private void StartRename()
+    {
+        _renaming = true;
+        _focusNameInput = true;
+        _draft = Project.DisplayName;
+    }
+
+    private async Task OnNameKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await CommitRenameAsync();
+        }
+        else if (args.Key == "Escape")
+        {
+            _renaming = false;
+        }
+    }
+
+    private async Task CommitRenameAsync()
+    {
+        _renaming = false;
+        await OnRename.InvokeAsync(_draft);
+    }
+}

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Scion.Application\Scion.Application.csproj" />
+    <ProjectReference Include="..\Scion.Infrastructure.LocalClients\Scion.Infrastructure.LocalClients.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Scion.Infrastructure.Codex.Tests" />
+  </ItemGroup>
+
+</Project>

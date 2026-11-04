@@ -1,0 +1,66 @@
+@implements IAsyncDisposable
+@inject IJSRuntime Js
+
+<div class="clamped-text">
+    <p class="@BodyClass" @ref="_body">@Text</p>
+    @if (_overflowing || _expanded)
+    {
+        <button type="button" class="text-action" @onclick="Toggle">@(_expanded ? "Show less" : "Show more")</button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference _body;
+    private DotNetObjectReference<ClampedText>? _reference;
+    private bool _overflowing;
+    private bool _expanded;
+
+    private string BodyClass => string.Join(' ', new[] { "clamped-text-body", _expanded ? null : "clamped", Class }.Where(name => name is not null));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _reference = DotNetObjectReference.Create(this);
+            await Js.InvokeVoidAsync("scion.observeClamp", _body, _reference);
+        }
+    }
+
+    /// <summary>Called by the browser whenever the clamped text is measured; only a clamped text can tell if it is cut.</summary>
+    [JSInvokable]
+    public void SetOverflowing(bool overflowing)
+    {
+        if (_overflowing == overflowing)
+        {
+            return;
+        }
+
+        _overflowing = overflowing;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void Toggle() => _expanded = !_expanded;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_reference is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Js.InvokeVoidAsync("scion.unobserveClamp", _body);
+        }
+        catch (JSDisconnectedException)
+        {
+            // The window is closing; there is nothing left to stop observing.
+        }
+
+        _reference.Dispose();
+        _reference = null;
+    }
+}

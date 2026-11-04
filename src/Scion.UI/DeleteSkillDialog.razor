@@ -1,0 +1,103 @@
+@inject DeleteSkill DeleteSkill
+
+@* The backdrop takes the keys, so Esc still works after a click on it moved the focus there. A click on it closes nothing. *@
+<div class="dialog-backdrop" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="dialog dialog-delete" role="dialog" aria-modal="true" aria-labelledby="delete-skill-title" tabindex="-1" @ref="_dialog">
+        <header class="dialog-header">
+            <h2 id="delete-skill-title">Delete <em class="dialog-skill-name">@Skill.Name</em>?</h2>
+            <button type="button" class="icon-button dialog-close" aria-label="Close" disabled="@_deleting" @onclick="DismissAsync"><CloseIcon /></button>
+        </header>
+
+        <p class="dialog-text">@DeleteMessages.Body</p>
+        <p class="dialog-context">@PlaceName · @AgentLabels.DisplayName(Agent)</p>
+
+        <footer class="dialog-footer dialog-footer-end">
+            @if (_originalNotFullyRemoved)
+            {
+                <span class="field-problem dialog-footer-message" role="alert"><WarningIcon />@DeleteMessages.OriginalNotFullyRemoved</span>
+            }
+            else if (_failed)
+            {
+                <span class="field-problem dialog-footer-message" role="alert"><WarningIcon />@DeleteMessages.Failed</span>
+            }
+            @if (!_originalNotFullyRemoved)
+            {
+                <button type="button" class="button button-secondary" disabled="@_deleting" @onclick="DeleteAsync">Delete</button>
+            }
+            <button type="button" class="button button-primary" disabled="@_deleting" @onclick="DismissAsync">@(_originalNotFullyRemoved ? "Close" : "Cancel")</button>
+        </footer>
+    </div>
+</div>
+
+@code {
+    private ElementReference _dialog;
+    private bool _deleting;
+    private bool _failed;
+    private bool _originalNotFullyRemoved;
+
+    [Parameter, EditorRequired] public Location Location { get; set; } = default!;
+
+    /// <summary>What the user calls the place: the project's display name, or "Personal".</summary>
+    [Parameter, EditorRequired] public string PlaceName { get; set; } = "";
+    [Parameter, EditorRequired] public Agent Agent { get; set; }
+    [Parameter, EditorRequired] public SkillSummary Skill { get; set; } = default!;
+
+    /// <summary>The user backed out; nothing was deleted.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>The skill is no longer in the list, or the dialog was left after a half-finished delete.</summary>
+    [Parameter] public EventCallback OnDeleted { get; set; }
+
+    private AgentLocation Place => new(Location, Agent);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _dialog.FocusAsync();
+        }
+    }
+
+    // After a half-finished delete the skill is already in the trash, so leaving the dialog must refresh the list.
+    private Task DismissAsync() => _originalNotFullyRemoved ? OnDeleted.InvokeAsync() : OnClose.InvokeAsync();
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape" && !_deleting)
+        {
+            await DismissAsync();
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_deleting)
+        {
+            return;
+        }
+
+        _deleting = true;
+        _failed = false;
+        try
+        {
+            var result = await DeleteSkill.ExecuteAsync(Place, Skill.FolderName);
+
+            if (result is { IsSuccess: true, Value: SkillDeletion.OriginalNotFullyRemoved })
+            {
+                _originalNotFullyRemoved = true;
+            }
+            else if (result.IsSuccess || result.Error == DeleteSkillError.SkillMissing)
+            {
+                await OnDeleted.InvokeAsync();
+            }
+            else
+            {
+                _failed = true;
+            }
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

@@ -1,0 +1,134 @@
+@inject IJSRuntime Js
+
+@* Choosing who adapts. It never touches the target of the adaptation (the project and the agent): that is chosen apart from this. *@
+<div class="provider-picker">
+    <button type="button" class="provider-picker-trigger" aria-haspopup="listbox" aria-expanded="@(_open ? "true" : "false")"
+            disabled="@Disabled" @onclick="ToggleAsync" @onkeydown="OnTriggerKeyDown" @ref="_trigger">
+        <span>@Chosen.Name</span><span class="provider-picker-caret" aria-hidden="true">▾</span>
+    </button>
+
+    @if (_open)
+    {
+        <div class="provider-picker-scrim" @onclick="CloseAsync"></div>
+        <ul class="provider-picker-list" role="listbox" tabindex="0" aria-label="AI provider"
+            aria-activedescendant="@OptionId(Providers[_active])" @ref="_list"
+            @onkeydown="OnListKeyDown" @onkeydown:stopPropagation>
+            @for (var index = 0; index < Providers.Count; index++)
+            {
+                var provider = Providers[index];
+                var isChosen = provider.Id == Chosen.Id;
+                <li role="option" id="@OptionId(provider)" class="provider-option @(index == _active ? "active" : "")"
+                    aria-selected="@(isChosen ? "true" : "false")" @onclick="() => ChooseAsync(provider)">
+                    <span class="provider-option-text">
+                        <span class="provider-option-name">@provider.Name</span>
+                        <span class="provider-option-state">@AdaptMessages.ProviderState(StateOf(provider), provider)</span>
+                    </span>
+                    @if (isChosen)
+                    {
+                        <CheckIcon Class="provider-option-check" />
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private ElementReference _trigger;
+    private ElementReference _list;
+    private bool _open;
+    private bool _focusList;
+    private int _active;
+
+    [Parameter, EditorRequired] public IReadOnlyList<AiProvider> Providers { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyDictionary<AiProviderId, AiProviderState> States { get; set; } = default!;
+    [Parameter, EditorRequired] public AiProvider Chosen { get; set; } = default!;
+
+    /// <summary>Closed while the choice may not change (a sign-in is awaited).</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public EventCallback<AiProvider> OnChosen { get; set; }
+
+    private AiProviderState StateOf(AiProvider provider) => States.GetValueOrDefault(provider.Id, AiProviderState.SignedOut);
+
+    private static string OptionId(AiProvider provider) => $"provider-option-{provider.Id.Value}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusList && _open)
+        {
+            _focusList = false;
+            await Js.InvokeVoidAsync("scion.keepListboxKeys", _list);
+            await _list.FocusAsync();
+        }
+    }
+
+    private Task ToggleAsync() => _open ? CloseAsync() : OpenAsync();
+
+    private Task OpenAsync()
+    {
+        if (Disabled || _open)
+        {
+            return Task.CompletedTask;
+        }
+
+        _open = true;
+        _focusList = true;
+        _active = Math.Max(0, IndexOf(Chosen));
+
+        return Task.CompletedTask;
+    }
+
+    // The focus goes back to what opened the list, as it does for any popup.
+    private async Task CloseAsync()
+    {
+        _open = false;
+        await _trigger.FocusAsync();
+    }
+
+    private async Task ChooseAsync(AiProvider provider)
+    {
+        var changed = provider.Id != Chosen.Id;
+        await CloseAsync();
+
+        if (changed)
+        {
+            await OnChosen.InvokeAsync(provider);
+        }
+    }
+
+    private Task OnTriggerKeyDown(KeyboardEventArgs args) =>
+        args.Key == "ArrowDown" ? OpenAsync() : Task.CompletedTask;
+
+    private Task OnListKeyDown(KeyboardEventArgs args)
+    {
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                _active = Math.Min(_active + 1, Providers.Count - 1);
+                return Task.CompletedTask;
+            case "ArrowUp":
+                _active = Math.Max(_active - 1, 0);
+                return Task.CompletedTask;
+            case "Enter" or " ":
+                return ChooseAsync(Providers[_active]);
+            case "Escape":
+                return CloseAsync();
+            default:
+                return Task.CompletedTask;
+        }
+    }
+
+    private int IndexOf(AiProvider provider)
+    {
+        for (var index = 0; index < Providers.Count; index++)
+        {
+            if (Providers[index].Id == provider.Id)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+}

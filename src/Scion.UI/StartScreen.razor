@@ -1,0 +1,127 @@
+@inject ListProjects ListProjects
+@inject RegisterProject RegisterProject
+@inject OpenProject OpenProject
+@inject RenameProject RenameProject
+@inject RemoveProject RemoveProject
+@inject IFolderPicker FolderPicker
+
+@if (_failure is not null)
+{
+    <RegistryErrorScreen Failure="_failure" OnTryAgain="LoadAsync" OnRecovered="LoadAsync" />
+}
+else if (_overview is not null)
+{
+    <main class="screen start-screen">
+        @if (_overview.Projects.Count == 0)
+        {
+            <PersonalCard Summary="_overview.Personal" OnOpen="OnOpenPersonal" />
+            <hr class="divider" />
+            <FirstRunEmptyState OnAddFirstProject="AddProjectAsync" />
+        }
+        else
+        {
+            <header class="start-header">
+                <span class="wordmark">Scion</span>
+                <button type="button" class="button button-secondary" @onclick="AddProjectAsync"><AddIcon />Add project</button>
+            </header>
+            <PersonalCard Summary="_overview.Personal" OnOpen="OnOpenPersonal" />
+            <hr class="divider" />
+            <ul class="project-grid">
+                @foreach (var project in _overview.Projects)
+                {
+                    <li>
+                        <ProjectCard Project="project"
+                                     OnOpen="() => OpenProjectAsync(project)"
+                                     OnRename="name => RenameProjectAsync(project, name)"
+                                     OnRemove="() => RemoveProjectAsync(project)" />
+                    </li>
+                }
+            </ul>
+        }
+    </main>
+}
+
+@code {
+    [Parameter] public EventCallback OnOpenPersonal { get; set; }
+    [Parameter] public EventCallback<OpenedProject> OnOpenProject { get; set; }
+
+    private ProjectOverview? _overview;
+    private RegistryFailure? _failure;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var result = await ListProjects.ExecuteAsync();
+
+        _overview = result.IsSuccess ? result.Value : null;
+        _failure = result.IsSuccess ? null : result.Error;
+    }
+
+    private async Task OpenProjectAsync(ProjectSummary project)
+    {
+        var result = await OpenProject.ExecuteAsync(project.Path);
+
+        if (result.IsSuccess)
+        {
+            await OnOpenProject.InvokeAsync(result.Value);
+        }
+        else if (result.Error is OpenProjectError.Registry registry)
+        {
+            _failure = registry.Failure;
+        }
+        else
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task AddProjectAsync()
+    {
+        var folder = await FolderPicker.PickFolderAsync(CancellationToken.None);
+
+        if (folder is null)
+        {
+            return;
+        }
+
+        var result = await RegisterProject.ExecuteAsync(folder);
+
+        if (result.IsSuccess)
+        {
+            await OnOpenProject.InvokeAsync(result.Value);
+        }
+        else
+        {
+            _failure = result.Error;
+        }
+    }
+
+    private async Task RenameProjectAsync(ProjectSummary project, string name)
+    {
+        var result = await RenameProject.ExecuteAsync(project.Path, name);
+
+        if (!result.IsSuccess && result.Error is RenameProjectError.Registry registry)
+        {
+            _failure = registry.Failure;
+        }
+        else
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task RemoveProjectAsync(ProjectSummary project)
+    {
+        var result = await RemoveProject.ExecuteAsync(project.Path);
+
+        if (result.IsSuccess)
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            _failure = result.Error;
+        }
+    }
+}

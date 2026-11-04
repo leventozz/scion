@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Smoke tests drive the real desktop app (Windows, WebView2). A plain "dotnet test" skips them;
+         run them with the filter Category=Smoke on this project -->
+    <VSTestTestCaseFilter Condition="'$(VSTestTestCaseFilter)' == ''">Category!=Smoke</VSTestTestCaseFilter>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Only builds the executable; the tests start it as a separate process. -->
+    <ProjectReference Include="..\..\src\Scion.Host.Desktop\Scion.Host.Desktop.csproj" ReferenceOutputAssembly="false" />
+    <!-- The stand-in for claude that the adapting tests point the app at. The real Claude is never called. -->
+    <ProjectReference Include="..\Scion.FakeClaude\Scion.FakeClaude.csproj" ReferenceOutputAssembly="false" />
+    <!-- The stand-in for codex, the same way. The real Codex is never called. -->
+    <ProjectReference Include="..\Scion.FakeCodex\Scion.FakeCodex.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

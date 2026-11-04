@@ -1,0 +1,32 @@
+@inject IJSRuntime JS
+
+@* The text of an adaptation that is still being written: read only, always scrolled to its end. Until the first text
+   arrives the box holds only the working indicator in its middle; after that the indicator is the cursor at the end of the
+   text. It never says anything about who is working. *@
+<pre class="@CssClass" @ref="_box">@Content</pre>
+
+@code {
+    private ElementReference _box;
+    private string _scrolledFor = "";
+
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+
+    private string CssClass => Text.Length == 0 ? "streaming-text streaming-empty" : "streaming-text";
+
+    private RenderFragment Waiting => @<Sparkle />;
+
+    private RenderFragment Written => @<text>@Text<span class="streaming-cursor"><Sparkle /></span></text>;
+
+    private RenderFragment Content => Text.Length == 0 ? Waiting : Written;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Text.Length == 0 || Text == _scrolledFor)
+        {
+            return;
+        }
+
+        _scrolledFor = Text;
+        await JS.InvokeVoidAsync("scion.scrollToEnd", _box);
+    }
+}

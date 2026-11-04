@@ -1,0 +1,7 @@
+<span class="avatar avatar-@Tone" aria-hidden="true">@AvatarStyle.Initials(Name)</span>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+
+    private string Tone => AvatarStyle.Tone(Name).ToString().ToLowerInvariant();
+}

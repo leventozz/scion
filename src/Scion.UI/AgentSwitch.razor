@@ -1,0 +1,16 @@
+<div class="agent-switch" role="group" aria-label="Agent">
+    @foreach (var agent in Agents)
+    {
+        <button type="button" aria-pressed="@(agent == Selected ? "true" : "false")"
+                @onclick="() => Select(agent)">@AgentLabels.DisplayName(agent)</button>
+    }
+</div>
+
+@code {
+    private static readonly Agent[] Agents = [Agent.ClaudeCode, Agent.Codex];
+
+    [Parameter, EditorRequired] public Agent Selected { get; set; }
+    [Parameter, EditorRequired] public EventCallback<Agent> SelectedChanged { get; set; }
+
+    private Task Select(Agent agent) => SelectedChanged.InvokeAsync(agent);
+}

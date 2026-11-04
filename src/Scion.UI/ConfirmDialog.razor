@@ -1,0 +1,38 @@
+@* The backdrop takes the keys, so Esc still works after a click on it moved the focus there. A click on it closes nothing. *@
+<div class="dialog-backdrop" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" tabindex="-1" @ref="_dialog">
+        <header class="dialog-header">
+            <h2 id="confirm-dialog-title">@Title</h2>
+            <button type="button" class="icon-button dialog-close" aria-label="Close" @onclick="OnDismiss"><CloseIcon /></button>
+        </header>
+        <p class="dialog-message">@Message</p>
+        <footer class="dialog-footer dialog-footer-end">@Buttons</footer>
+    </div>
+</div>
+
+@code {
+    private ElementReference _dialog;
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter, EditorRequired] public string Message { get; set; } = "";
+    [Parameter, EditorRequired] public RenderFragment Buttons { get; set; } = default!;
+
+    /// <summary>The safe way out, taken by the close button and Esc.</summary>
+    [Parameter, EditorRequired] public EventCallback OnDismiss { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _dialog.FocusAsync();
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await OnDismiss.InvokeAsync();
+        }
+    }
+}

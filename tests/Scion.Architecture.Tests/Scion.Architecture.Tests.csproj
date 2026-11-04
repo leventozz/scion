@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Scion.Application\Scion.Application.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Domain\Scion.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.ClaudeCode\Scion.Infrastructure.ClaudeCode.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.Codex\Scion.Infrastructure.Codex.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.FileSystem\Scion.Infrastructure.FileSystem.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.LocalClients\Scion.Infrastructure.LocalClients.csproj" />
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.ProjectRegistry\Scion.Infrastructure.ProjectRegistry.csproj" />
+    <ProjectReference Include="..\..\src\Scion.UI\Scion.UI.csproj" />
+  </ItemGroup>
+
+</Project>

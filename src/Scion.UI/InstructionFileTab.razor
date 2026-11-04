@@ -1,0 +1,292 @@
+@implements IDisposable
+@inject ReadInstructionFiles ReadInstructionFiles
+@inject OpenFileForEditing OpenFileForEditing
+@inject SaveEditedFile SaveEditedFile
+@inject CreateInstructionFile CreateInstructionFile
+@inject IFolderRevealer Revealer
+@inject CloseGuard CloseGuard
+
+@if (_files is { Count: 0 })
+{
+    <div class="instruction-empty-state">
+        <p class="instruction-empty">@InstructionFileMessages.Empty(Location, Agent)</p>
+        <button type="button" class="button button-primary" disabled="@_creating" @onclick="CreateAsync">Create @AgentLabels.InstructionFileName(Agent)</button>
+        @if (_createError is not null)
+        {
+            <EditMessage Error="@_createError" />
+        }
+    </div>
+}
+else if (_files is not null)
+{
+    @foreach (var file in _files)
+    {
+        <section class="instruction-file">
+            <div class="instruction-file-bar">
+                <span class="instruction-file-path">@InstructionFileMessages.PathLabel(Location, file.RelativePath)</span>
+                @if (IsEditing(file) && _editing is { } editing)
+                {
+                    <EditPreviewSwitch Mode="editing.Mode" ModeChanged="SetMode" />
+                    <EditActions IsDirty="editing.IsDirty" IsSaving="editing.IsSaving" Error="@editing.Error" Note="@editing.Note"
+                                 OnCancel="CancelEditingAsync" OnSave="SaveWithButtonAsync" />
+                }
+                else
+                {
+                    <button type="button" class="text-action" @onclick="() => Revealer.ShowAsync(file.FolderPath)">Show in folder</button>
+                    @if (_editing is null && file.Content is InstructionFileContent.Markdown)
+                    {
+                        <button type="button" class="text-action" @onclick="() => StartEditingAsync(file)">Edit</button>
+                    }
+                    @if (_messagePath == file.RelativePath)
+                    {
+                        <EditMessage Error="@_openError" Note="@_savedNote" />
+                    }
+                }
+            </div>
+            @if (IsEditing(file) && _editing is { } draft)
+            {
+                @if (draft.Mode == EditMode.Preview)
+                {
+                    <MarkdownView Text="@draft.Draft" />
+                }
+                else
+                {
+                    <TextEditor Text="@draft.Draft" TextChanged="draft.SetDraft" Label="@file.RelativePath" />
+                }
+            }
+            else if (file.Content is InstructionFileContent.Markdown markdown)
+            {
+                <MarkdownView Text="@markdown.Text" />
+            }
+            else
+            {
+                <p class="file-not-shown">This file can't be shown here.</p>
+            }
+        </section>
+    }
+}
+
+<EditingDialogs IsEditing="@(_editing is not null)" IsConfirmingDiscard="@(_editing?.IsConfirmingDiscard ?? false)"
+                Conflict="_editing?.Conflict" FileName="@FileName"
+                OnSaveShortcut="SaveWithShortcutAsync" OnKeepEditing="() => _editing?.KeepEditing()"
+                OnDiscard="() => _editing?.Discard()" OnCancelConflict="() => _editing?.CancelConflict()"
+                OnReload="ReloadAsync" OnOverwrite="OverwriteAsync" />
+
+@code {
+    [Parameter, EditorRequired] public Location Location { get; set; } = default!;
+    [Parameter, EditorRequired] public Agent Agent { get; set; }
+
+    private IReadOnlyList<InstructionFileView>? _files;
+    private Agent? _loadedAgent;
+    private FileEditing? _editing;
+    private IDisposable? _closeTracking;
+    private string? _editingPath;
+    private string? _messagePath;
+    private string? _openError;
+    private string? _savedNote;
+    private bool _returnToViewAfterSave;
+    private bool _creating;
+    private string? _createError;
+
+    private string FileName => System.IO.Path.GetFileName(_editingPath ?? "");
+
+    private bool IsEditing(InstructionFileView file) => _editing is not null && _editingPath == file.RelativePath;
+
+    /// <summary>
+    /// True when the caller may go on: nothing is being edited, nothing is unsaved, or the user chose to discard (the
+    /// editing then ends). A dirty draft asks first.
+    /// </summary>
+    public async Task<bool> ConfirmLeaveAsync()
+    {
+        if (_editing is null)
+        {
+            return true;
+        }
+
+        if (!await _editing.ConfirmLeaveAsync())
+        {
+            return false;
+        }
+
+        StopEditing();
+        return true;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedAgent == Agent)
+        {
+            return;
+        }
+
+        StopEditing();
+        var agent = Agent;
+        _loadedAgent = agent;
+        _files = null;
+        _createError = null;
+
+        await LoadFilesAsync(agent);
+    }
+
+    private async Task LoadFilesAsync(Agent agent)
+    {
+        var files = await ReadInstructionFiles.ExecuteAsync(Location, agent);
+
+        // A slower read of the agent that was shown before must not overwrite the current one.
+        if (agent == Agent)
+        {
+            _files = files;
+        }
+    }
+
+    // The new file opens for editing at once, so the user can write the first lines; nothing is ever replaced.
+    private async Task CreateAsync()
+    {
+        if (_creating)
+        {
+            return;
+        }
+
+        _creating = true;
+        _createError = null;
+        var fileName = AgentLabels.InstructionFileName(Agent);
+        try
+        {
+            var result = await CreateInstructionFile.ExecuteAsync(Location, Agent);
+
+            if (result.IsSuccess)
+            {
+                await LoadFilesAsync(Agent);
+                if (_files?.FirstOrDefault(file => file.RelativePath == result.Value.RelativePath) is { } created)
+                {
+                    await StartEditingAsync(created);
+                }
+            }
+            else if (result.Error == CreateInstructionFileError.AlreadyExists)
+            {
+                await LoadFilesAsync(Agent);
+                _messagePath = _files?.FirstOrDefault()?.RelativePath;
+                _openError = $"{fileName} already exists, so it wasn't created.";
+                _savedNote = null;
+            }
+            else
+            {
+                _createError = $"{fileName} couldn't be created.";
+            }
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private async Task StartEditingAsync(InstructionFileView file)
+    {
+        _messagePath = file.RelativePath;
+        _openError = null;
+        _savedNote = null;
+        var editing = new FileEditing(
+            OpenFileForEditing, SaveEditedFile, new EditableFile.InstructionFile(Location, Agent, file.RelativePath));
+
+        if (!await editing.StartAsync())
+        {
+            _openError = editing.Error;
+            return;
+        }
+
+        editing.Changed += OnEditingChanged;
+        _editing = editing;
+        _editingPath = file.RelativePath;
+        _closeTracking = CloseGuardTracking.Track(CloseGuard, editing, InvokeAsync);
+    }
+
+    private void SetMode(EditMode mode)
+    {
+        if (mode == EditMode.Preview)
+        {
+            _editing?.ShowPreview();
+        }
+        else
+        {
+            _editing?.ShowEditor();
+        }
+    }
+
+    private async Task CancelEditingAsync()
+    {
+        if (_editing is { } editing && await editing.ConfirmLeaveAsync())
+        {
+            await LeaveEditingAsync();
+        }
+    }
+
+    private Task SaveWithButtonAsync() => SaveAsync(returnToView: true);
+
+    private Task SaveWithShortcutAsync() => SaveAsync(returnToView: false);
+
+    private async Task SaveAsync(bool returnToView)
+    {
+        if (_editing is not { IsSaving: false, Conflict: null, IsConfirmingDiscard: false } editing)
+        {
+            return;
+        }
+
+        _returnToViewAfterSave = returnToView;
+        if (await editing.SaveAsync() == SaveOutcome.Saved)
+        {
+            await AfterSavedAsync(editing);
+        }
+    }
+
+    private async Task OverwriteAsync()
+    {
+        if (_editing is { } editing && await editing.OverwriteAsync() == SaveOutcome.Saved)
+        {
+            await AfterSavedAsync(editing);
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (_editing is { } editing)
+        {
+            await editing.ReloadAsync();
+        }
+    }
+
+    private async Task AfterSavedAsync(FileEditing editing)
+    {
+        if (_returnToViewAfterSave)
+        {
+            var note = editing.Note;
+            await LeaveEditingAsync();
+            _savedNote = note;
+        }
+    }
+
+    // Edit mode ends and the files are read again, because the file may have been saved with Ctrl+S on the way.
+    private async Task LeaveEditingAsync()
+    {
+        StopEditing();
+        _openError = null;
+        _savedNote = null;
+        await LoadFilesAsync(Agent);
+    }
+
+    private void StopEditing()
+    {
+        _closeTracking?.Dispose();
+        _closeTracking = null;
+
+        if (_editing is { } editing)
+        {
+            editing.Changed -= OnEditingChanged;
+            _editing = null;
+            _editingPath = null;
+        }
+    }
+
+    private void OnEditingChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => StopEditing();
+}

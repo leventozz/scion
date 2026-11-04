@@ -1,0 +1,236 @@
+@inject ListSkills ListSkills
+@inject RemoveProject RemoveProject
+
+@if (_failure is not null)
+{
+    <RegistryErrorScreen Failure="_failure" OnTryAgain="RemoveFromScionAsync" OnRecovered="OnBack" />
+}
+else
+{
+    <main class="screen">
+        <header class="screen-header">
+            <button type="button" class="icon-button" aria-label="Back" @onclick="GoBackAsync"><BackIcon /></button>
+            @if (Location is Location.Project project)
+            {
+                <ProjectAvatar Name="@Title" />
+                <div class="screen-title">
+                    <h1>@Title</h1>
+                    <span class="screen-path"><PathText Path="@project.Path" /></span>
+                </div>
+            }
+            else
+            {
+                <div class="folder-tile" aria-hidden="true"><FolderIcon /></div>
+                <div class="screen-title">
+                    <div class="screen-title-line">
+                        <h1>@Title</h1>
+                        <span class="screen-title-home">~</span>
+                    </div>
+                    <span class="screen-subtitle">Skills available in every project</span>
+                </div>
+            }
+            @if (_tab == Tab.Skills && _skills is { Count: > 0 } && !FolderMissing)
+            {
+                <div class="screen-header-actions">
+                    <button type="button" class="button button-secondary" @onclick="OpenCopyFrom">Copy from…</button>
+                    <button type="button" class="button button-primary" @onclick="OpenNewSkill"><AddIcon />New skill</button>
+                </div>
+            }
+        </header>
+
+        @if (FolderMissing)
+        {
+            <div class="folder-missing-state">
+                <span class="folder-missing-glyph"><FolderOffIcon /></span>
+                <p>This folder no longer exists.</p>
+                <button type="button" class="button button-secondary" @onclick="RemoveFromScionAsync">Remove from Scion</button>
+            </div>
+        }
+        else
+        {
+            <AgentSwitch Selected="Agent" SelectedChanged="SelectAgentAsync" />
+
+            <div class="tabs" role="tablist">
+                <button type="button" role="tab" aria-selected="@AriaSelected(Tab.Skills)" @onclick="() => SelectTabAsync(Tab.Skills)">Skills</button>
+                <button type="button" role="tab" aria-selected="@AriaSelected(Tab.InstructionFile)" @onclick="() => SelectTabAsync(Tab.InstructionFile)">@AgentLabels.InstructionFileName(Agent)</button>
+            </div>
+
+            @if (_tab == Tab.InstructionFile)
+            {
+                <InstructionFileTab @ref="_instructionTab" Location="Location" Agent="Agent" />
+            }
+            else if (_skills is { Count: 0 })
+            {
+                <EmptyState Location="Location" Agent="Agent" OtherAgentWithSkills="_otherAgentWithSkills" OnCopyFrom="OpenCopyFromEmptyState" OnNewSkill="OpenNewSkill" />
+            }
+            else if (_skills is not null)
+            {
+                <ul class="skill-list">
+                    @foreach (var skill in _skills)
+                    {
+                        <SkillRow Skill="skill" OnOpen="() => OnOpenSkill.InvokeAsync(skill)" OnEdit="() => OnEditSkill.InvokeAsync(skill)" OnCopyTo="() => OpenCopyTo(skill)" OnAdapt="() => OpenAdapt(skill)" OnDelete="() => OpenDelete(skill)" />
+                    }
+                </ul>
+            }
+        }
+
+        @if (_copyDialog is not null)
+        {
+            <CopySkillsDialog Start="_copyDialog" OnClose="CloseCopyDialog" OnCopied="ReloadAfterCopyAsync" />
+        }
+
+        @if (_adaptingSkill is not null)
+        {
+            <AdaptSkillDialog Source="Place" SourceAgent="Agent" Skill="_adaptingSkill" OnClose="CloseAdaptDialog" OnSaved="ReloadAfterAdaptAsync" />
+        }
+
+        @if (_deletingSkill is not null)
+        {
+            <DeleteSkillDialog Location="Location" PlaceName="@Title" Agent="Agent" Skill="_deletingSkill" OnClose="CloseDeleteDialog" OnDeleted="ReloadAfterDeleteAsync" />
+        }
+
+        @if (_newSkillDialog)
+        {
+            <NewSkillDialog Location="Location" PlaceName="@Title" Agent="Agent" OnClose="CloseNewSkillDialog" OnCreated="OpenCreatedSkillAsync" />
+        }
+    </main>
+}
+
+@code {
+    [Parameter, EditorRequired] public Location Location { get; set; } = default!;
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public bool FolderMissing { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+    [Parameter] public Agent Agent { get; set; } = Agent.ClaudeCode;
+    [Parameter] public EventCallback<Agent> AgentChanged { get; set; }
+    [Parameter] public EventCallback<SkillSummary> OnOpenSkill { get; set; }
+    [Parameter] public EventCallback<SkillSummary> OnEditSkill { get; set; }
+
+    private enum Tab
+    {
+        Skills,
+        InstructionFile,
+    }
+
+    private IReadOnlyList<SkillSummary>? _skills;
+    private Tab _tab = Tab.Skills;
+    private RegistryFailure? _failure;
+    private Agent? _otherAgentWithSkills;
+    private CopyDialogStart? _copyDialog;
+    private bool _newSkillDialog;
+    private SkillSummary? _deletingSkill;
+    private SkillSummary? _adaptingSkill;
+    private InstructionFileTab? _instructionTab;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!FolderMissing)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private string AriaSelected(Tab tab) => _tab == tab ? "true" : "false";
+
+    // Leaving the instruction file tab, by switching agent or tab or by going back, must not lose a draft unasked.
+    private async Task<bool> ConfirmLeaveAsync() =>
+        _tab != Tab.InstructionFile || _instructionTab is null || await _instructionTab.ConfirmLeaveAsync();
+
+    private async Task GoBackAsync()
+    {
+        if (await ConfirmLeaveAsync())
+        {
+            await OnBack.InvokeAsync();
+        }
+    }
+
+    private async Task SelectTabAsync(Tab tab)
+    {
+        if (tab != _tab && await ConfirmLeaveAsync())
+        {
+            _tab = tab;
+        }
+    }
+
+    private async Task SelectAgentAsync(Agent agent)
+    {
+        if (agent != Agent && !await ConfirmLeaveAsync())
+        {
+            return;
+        }
+
+        Agent = agent;
+        await AgentChanged.InvokeAsync(agent);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _skills = await ListSkills.ExecuteAsync(Location, Agent);
+        _otherAgentWithSkills = _skills.Count == 0 ? await OtherAgentWithSkillsAsync() : null;
+    }
+
+    private async Task<Agent?> OtherAgentWithSkillsAsync()
+    {
+        var other = Agent == Agent.ClaudeCode ? Agent.Codex : Agent.ClaudeCode;
+
+        return (await ListSkills.ExecuteAsync(Location, other)).Count > 0 ? other : null;
+    }
+
+    private CopyPlace Place => new(Title, Location);
+
+    private void OpenCopyFrom() => _copyDialog = CopyDialogStart.CopyFrom(Place, Agent);
+
+    private void OpenCopyFromEmptyState() => _copyDialog = _otherAgentWithSkills is { } other
+        ? CopyDialogStart.CopyFromAgent(Place, Agent, other)
+        : CopyDialogStart.CopyFrom(Place, Agent);
+
+    private void OpenCopyTo(SkillSummary skill) =>
+        _copyDialog = CopyDialogStart.CopyTo(Place, Agent, skill.FolderName);
+
+    private void CloseCopyDialog() => _copyDialog = null;
+
+    private void OpenAdapt(SkillSummary skill) => _adaptingSkill = skill;
+
+    private void CloseAdaptDialog() => _adaptingSkill = null;
+
+    // The adapted skill may have gone into this very screen (another agent of the same place), so the list is read again.
+    private async Task ReloadAfterAdaptAsync() => await LoadAsync();
+
+    private void OpenDelete(SkillSummary skill) => _deletingSkill = skill;
+
+    private void CloseDeleteDialog() => _deletingSkill = null;
+
+    private async Task ReloadAfterDeleteAsync()
+    {
+        _deletingSkill = null;
+        await LoadAsync();
+    }
+
+    private void OpenNewSkill() => _newSkillDialog = true;
+
+    private void CloseNewSkillDialog() => _newSkillDialog = false;
+
+    // A new skill opens on its page, already editing SKILL.md, so the user can fill in the body at once.
+    private async Task OpenCreatedSkillAsync(SkillSummary skill)
+    {
+        _newSkillDialog = false;
+        await OnEditSkill.InvokeAsync(skill);
+    }
+
+    private async Task ReloadAfterCopyAsync() => await LoadAsync();
+
+    private async Task RemoveFromScionAsync()
+    {
+        var result = await RemoveProject.ExecuteAsync(((Location.Project)Location).Path);
+
+        if (result.IsSuccess)
+        {
+            await OnBack.InvokeAsync();
+        }
+        else
+        {
+            _failure = result.Error;
+        }
+    }
+}

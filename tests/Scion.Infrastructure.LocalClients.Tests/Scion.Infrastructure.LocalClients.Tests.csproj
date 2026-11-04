@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Scion.Infrastructure.LocalClients\Scion.Infrastructure.LocalClients.csproj" />
+    <!-- Only builds the stand-in executable; the tests start it as a separate process. No real client is ever called. -->
+    <ProjectReference Include="..\Scion.FakeClaude\Scion.FakeClaude.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
