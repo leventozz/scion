@@ -21,6 +21,8 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# The release notes of each version (docs/releases/<version>.md) are part of the repository.
+!docs/releases/
 x64/
 x86/
 [Ww][Ii][Nn]32/
