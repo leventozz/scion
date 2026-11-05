@@ -58,10 +58,7 @@ jobs:
           cat > out/README.txt <<'TEXT'
           Scion for macOS, a package to try. It is signed with a Developer ID and notarized, so macOS should open it without a warning.
           Unzip it and open Scion.app. Do not run anything in Terminal first: the point of this package is that it opens without.
-          If macOS blocks it anyway, say what the dialog says. Only then, to go on trying, run once in the folder that holds Scion.app:
-
-            xattr -dr com.apple.quarantine Scion.app
-
+          If macOS blocks it, or it does not start, say exactly what the dialog or the window says.
           If you pick the wrong kind of Mac (arm64 is Apple silicon, x64 is Intel) it will not start.
           Say what you see: it starts or not, the window, the project grid, adding a project, the skill pages, editing, copying, and
           Adapt with AI (it starts your own Claude Code).

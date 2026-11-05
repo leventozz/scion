@@ -51,15 +51,24 @@ public class WebsiteTests
     }
 
     [Fact]
-    public void The_macOS_download_says_which_Macs_it_is_for_and_how_to_open_an_app_without_a_developer_signature()
+    public void The_macOS_download_says_which_Macs_it_is_for_and_asks_for_no_command_to_open_it()
     {
-        const string RemoveQuarantine = "xattr -dr com.apple.quarantine Scion.app";
         var root = RepositoryRoot();
+        var texts = new Dictionary<string, string>
+        {
+            ["the page"] = PageText(),
+            ["README.md"] = File.ReadAllText(Path.Combine(root, "README.md")),
+            ["package-macos.yml"] = File.ReadAllText(Path.Combine(root, ".github", "workflows", "package-macos.yml")),
+        };
 
-        Assert.Contains("Apple silicon", PageText());
-        Assert.Contains(RemoveQuarantine, PageText());
-        Assert.Contains(RemoveQuarantine, File.ReadAllText(Path.Combine(root, "README.md")));
-        Assert.Contains(RemoveQuarantine, File.ReadAllText(Path.Combine(root, ".github", "workflows", "package-macos.yml")));
+        Assert.Contains("Apple silicon", texts["the page"]);
+        // The Mac app is signed and notarized: nothing tells a person to open it by hand, or says it has no signature.
+        foreach (var (where, text) in texts)
+        {
+            Assert.DoesNotContain("xattr", text);
+            Assert.DoesNotContain("quarantine", text);
+            Assert.DoesNotContain("developer signature", text);
+        }
     }
 
     [Fact]

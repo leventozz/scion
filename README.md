@@ -98,15 +98,9 @@ copy it as it is.
 Download the latest release from [Releases](https://github.com/leventozz/scion/releases/latest):
 
 - **Windows:** `Scion-win-Setup.exe`. It installs Scion and keeps it up to date.
-- **macOS, Apple silicon:** `Scion-osx-arm64-Portable.zip`. The app has no developer signature yet, so macOS blocks it the first time.
-  Unzip it and run this once in Terminal, in the folder that holds `Scion.app`, then open the app:
-
-  ```
-  xattr -dr com.apple.quarantine Scion.app
-  ```
-
-  The Mac app looks for updates in the same releases as the Windows one.
-- **macOS, Intel:** `Scion-osx-x64-Portable.zip`, opened the same way. It is made the same way as the Apple silicon build, but not tried on
+- **macOS, Apple silicon:** `Scion-osx-arm64-Portable.zip`. Unzip it and open `Scion.app`. The app is signed with a Developer ID and
+  notarized by Apple, so macOS opens it without a warning. It looks for updates in the same releases as the Windows one.
+- **macOS, Intel:** `Scion-osx-x64-Portable.zip`. It is signed and notarized the same way as the Apple silicon build, but not tried on
   an Intel Mac yet.
 
 Or build it yourself. Requirements:
@@ -204,7 +198,7 @@ on an Intel Mac yet, and Linux has not been run (the code targets it).
 Planned:
 
 - Intel Macs: try the build. Linux: build, try and release it.
-- macOS: sign and notarize the app, give it an icon, and let it update itself.
+- macOS: check that the Mac app updates itself (that needs two signed releases).
 - Codex: honour `CODEX_HOME`, and warn on the instruction-file tab when an `AGENTS.override.md` makes
   the `AGENTS.md` beside it have no effect.
 
