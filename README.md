@@ -6,6 +6,8 @@
 
 **Manage AI agent skills per project, and adapt them instead of just copying.**
 
+[leventozz.github.io/scion](https://leventozz.github.io/scion)
+
 [![CI](https://github.com/leventozz/scion/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/leventozz/scion/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4.svg)](https://dotnet.microsoft.com/download)
@@ -49,11 +51,19 @@ copy it as it is.
 - If a file changed on disk since you opened it, Scion asks before it saves (Cancel, Reload or Overwrite).
 - Create a skill from a template, or create the instruction file a project doesn't have yet.
 
+<div align="center">
+<img src="docs/images/skill-edit.png" alt="A SKILL.md open in the editor, with an Unsaved changes note and Cancel and Save buttons" width="760">
+</div>
+
 ### Copy
 
 - Copy a skill to another project, to Personal, or to another agent. A skill is always copied as a whole
   folder, including `scripts/`, `references/` and `assets/`.
 - When the target already has a skill with that name, you choose Skip or Overwrite for it.
+
+<div align="center">
+<img src="docs/images/copy-conflict.png" alt="The copy dialog: release-notes already exists in the target with different content, with Skip and Overwrite to choose from" width="480">
+</div>
 
 ### Adapt with AI
 
@@ -145,6 +155,9 @@ The smoke tests drive the real desktop app and run on Windows only; a plain `dot
 ```
 dotnet test tests/Scion.Smoke.Tests --filter Category=Smoke
 ```
+
+The screenshots of the README and the website that need a real app (`docs/images/skill-edit.png`, `copy-conflict.png`) are
+made by `dotnet test tests/Scion.Smoke.Tests --filter Category=DocsImages` (Windows only; run on request, never by `dotnet test`).
 
 The `SCION_*` environment variables read by `src/Scion.Host.Desktop/Program.cs` (`SCION_HOME`,
 `SCION_TEST_FOLDER`, `SCION_TEST_SHELL_LOG`, `SCION_CLAUDE_PATH`, `SCION_CODEX_PATH`) exist for the
