@@ -114,6 +114,40 @@ public class WebsiteTests
     }
 
     [Fact]
+    public void Every_screenshot_opens_larger_in_a_lightbox_that_closes_without_a_script()
+    {
+        var figures = Regex.Matches(Page(), @"<figure class=""[^""]*\bshot\b[^""]*"">(?<inner>.*?)</figure>", RegexOptions.Singleline)
+            .Select(match => match.Groups["inner"].Value)
+            .ToList();
+
+        Assert.NotEmpty(figures);
+        foreach (var figure in figures)
+        {
+            var zoom = Regex.Match(figure, @"<a class=""zoom"" href=""#(?<id>[^""]+)""[^>]*>\s*(?<image><img\b[^>]*>)\s*</a>", RegexOptions.Singleline);
+            Assert.True(zoom.Success, $"No link around the picture: {figure}");
+
+            var lightbox = Regex.Match(figure, @"<a class=""lightbox"" id=""(?<id>[^""]+)"" href=""#!""[^>]*>\s*(?<image><img\b[^>]*>)", RegexOptions.Singleline);
+            Assert.True(lightbox.Success, $"No lightbox that closes with #!: {figure}");
+
+            Assert.Equal(zoom.Groups["id"].Value, lightbox.Groups["id"].Value);
+            Assert.Equal(Attribute(zoom.Groups["image"].Value, "src"), Attribute(lightbox.Groups["image"].Value, "src"));
+            Assert.Equal(Attribute(zoom.Groups["image"].Value, "alt"), Attribute(lightbox.Groups["image"].Value, "alt"));
+        }
+
+        var ids = Regex.Matches(Page(), @"<a class=""lightbox"" id=""(?<id>[^""]+)""").Select(match => match.Groups["id"].Value).ToList();
+        Assert.Equal(ids.Distinct().Count(), ids.Count);
+        // "#!" names no element, so closing a lightbox does not scroll the page back to its top (a bare "#" does).
+        Assert.DoesNotContain("id=\"!\"", Page());
+    }
+
+    [Fact]
+    public void A_lightbox_is_hidden_until_it_is_the_target_of_the_address()
+    {
+        Assert.Matches(@"\.lightbox\s*\{[^}]*display:\s*none", Styles());
+        Assert.Matches(@"\.lightbox:target\s*\{[^}]*display:\s*(flex|grid)", Styles());
+    }
+
+    [Fact]
     public void Head_describes_the_page_for_search_and_for_link_previews()
     {
         var canonical = Attribute(LinkTag("canonical"), "href");

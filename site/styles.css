@@ -257,6 +257,50 @@ h1 {
   width: auto;
 }
 
+/* Enlarged screenshots: a lightbox that opens when its address is the page's target, so it needs no script. */
+
+.zoom {
+  display: block;
+  cursor: zoom-in;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  background: rgba(14, 14, 16, 0.94);
+  cursor: zoom-out;
+}
+
+.lightbox:target {
+  display: flex;
+}
+
+.lightbox::after {
+  content: "\00d7";
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-lg);
+  color: var(--on-surface-variant);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.shot .lightbox img {
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+
+body:has(.lightbox:target) {
+  overflow: hidden;
+}
+
 /* Why Scion */
 
 .why {
