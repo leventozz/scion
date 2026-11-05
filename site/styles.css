@@ -1,0 +1,130 @@
+@font-face {
+  font-family: "Geist";
+  src: url("fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Newsreader";
+  src: url("fonts/Newsreader-Variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --surface: #131315;
+  --surface-container-high: #2a2a2c;
+  --surface-bright: #39393b;
+  --on-surface: #e5e1e4;
+  --outline: #8a938b;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --primary: #9cd3af;
+  --on-primary: #003920;
+
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.site-header,
+main,
+.site-footer {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+.wordmark {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+h1 {
+  margin: var(--space-xl) 0 var(--space-lg);
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-xl);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 20px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.button:focus-visible {
+  outline: 1px solid rgba(156, 211, 175, 0.5);
+  outline-offset: 1px;
+}
+
+.button-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.button-primary:hover {
+  opacity: 0.9;
+}
+
+.button-secondary {
+  background: var(--surface-container-high);
+  border-color: var(--hairline);
+  color: var(--on-surface);
+}
+
+.button-secondary:hover {
+  background: var(--surface-bright);
+}
+
+.screenshot {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.site-footer {
+  color: var(--outline);
+  font-size: 13px;
+}
+
+.site-footer a {
+  color: inherit;
+}
