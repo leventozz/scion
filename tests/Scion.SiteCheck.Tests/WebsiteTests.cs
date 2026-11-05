@@ -43,7 +43,7 @@ public class WebsiteTests
             .Select(match => (Address: match.Groups["address"].Value, File: match.Groups["file"].Value))
             .ToList();
 
-        Assert.Equal(["Scion-osx-arm64.zip", "Scion-win-Setup.exe"], downloads.Select(download => download.File).Order(StringComparer.Ordinal));
+        Assert.Equal(["Scion-osx-arm64.zip", "Scion-osx-x64.zip", "Scion-win-Setup.exe"], downloads.Select(download => download.File).Order(StringComparer.Ordinal));
         Assert.All(downloads, download => Assert.True(AllowedAddresses.Site.Allows(download.Address), $"{download.Address} is not the repository's."));
 
         var release = File.ReadAllText(Path.Combine(RepositoryRoot(), ".github", "workflows", "release.yml"));
@@ -60,6 +60,17 @@ public class WebsiteTests
         Assert.Contains(RemoveQuarantine, PageText());
         Assert.Contains(RemoveQuarantine, File.ReadAllText(Path.Combine(root, "README.md")));
         Assert.Contains(RemoveQuarantine, File.ReadAllText(Path.Combine(root, ".github", "workflows", "package-macos.yml")));
+    }
+
+    [Fact]
+    public void The_Intel_build_is_offered_with_the_same_words_everywhere_about_not_having_been_tried()
+    {
+        const string NotTried = "not tried on an Intel Mac yet";
+        // A line break in Markdown is a space.
+        var readme = Regex.Replace(File.ReadAllText(Path.Combine(RepositoryRoot(), "README.md")), @"\s+", " ");
+
+        Assert.Contains(NotTried, PageText());
+        Assert.Contains(NotTried, readme);
     }
 
     [Fact]

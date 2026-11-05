@@ -77,12 +77,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit v${{ steps.versions.outputs.version }} --notes-file ${{ steps.versions.outputs.notes }}
 
-  # The macOS zip for Apple silicon, attached to the release the job above has just published. It is a plain zip with Scion.app:
-  # Scion's updater (Velopack) does not know it, so a Mac installs a new version by downloading it again. The file name is the one
-  # the website links to (releases/latest/download/Scion-osx-arm64.zip); a test ties the page to this name.
+  # The macOS zips, attached to the release the job above has just published: osx-arm64 is Apple silicon, osx-x64 is Intel. Each is a
+  # plain zip with Scion.app: Scion's updater (Velopack) does not know them, so a Mac installs a new version by downloading it again.
+  # The file names are the ones the website links to (releases/latest/download/<file>); a test ties the page to these names.
   macos:
     needs: release
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: osx-arm64
+            file: Scion-osx-arm64.zip
+          - rid: osx-x64
+            file: Scion-osx-x64.zip
     steps:
       - uses: actions/checkout@v4
 
@@ -91,9 +99,9 @@ jobs:
           global-json-file: global.json
 
       - name: Make Scion.app and zip it
-        run: bash tools/macos/package-app.sh osx-arm64 "${GITHUB_REF_NAME#v}" Scion-osx-arm64.zip
+        run: bash tools/macos/package-app.sh ${{ matrix.rid }} "${GITHUB_REF_NAME#v}" ${{ matrix.file }}
 
       - name: Attach the zip to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$GITHUB_REF_NAME" Scion-osx-arm64.zip --clobber
+        run: gh release upload "$GITHUB_REF_NAME" ${{ matrix.file }} --clobber

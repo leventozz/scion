@@ -106,6 +106,8 @@ Download the latest release from [Releases](https://github.com/leventozz/scion/r
   ```
 
   The Mac app does not update itself: download the next version the same way.
+- **macOS, Intel:** `Scion-osx-x64.zip`, opened the same way. It is made the same way as the Apple silicon build, but not tried on
+  an Intel Mac yet.
 
 Or build it yourself. Requirements:
 
@@ -196,12 +198,12 @@ A new AI provider or agent is a new adapter class and a registration, not a chan
 
 ## Status
 
-Pre-1.0. Developed on Windows. The macOS build for Apple silicon has been tried on one Mac; Intel Macs and Linux have not been
-run yet (the code targets them).
+Pre-1.0. Developed on Windows. The macOS build for Apple silicon has been tried on one Mac; the Intel build is released but not tried
+on an Intel Mac yet, and Linux has not been run (the code targets it).
 
 Planned:
 
-- Intel Macs and Linux: build, try and release them.
+- Intel Macs: try the build. Linux: build, try and release it.
 - macOS: sign and notarize the app, give it an icon, and let it update itself.
 - Codex: honour `CODEX_HOME`, and warn on the instruction-file tab when an `AGENTS.override.md` makes
   the `AGENTS.md` beside it have no effect.
