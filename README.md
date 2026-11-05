@@ -11,7 +11,7 @@
 [![CI](https://github.com/leventozz/scion/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/leventozz/scion/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4.svg)](https://dotnet.microsoft.com/download)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%2F%20Linux%20planned-lightgrey.svg)](#status)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%C2%B7%20macOS%20%28Apple%20silicon%29%20%C2%B7%20Linux%20planned-lightgrey.svg)](#status)
 
 <br>
 
@@ -95,7 +95,19 @@ copy it as it is.
 
 ## Getting started
 
-Requirements:
+Download the latest release from [Releases](https://github.com/leventozz/scion/releases/latest):
+
+- **Windows:** `Scion-win-Setup.exe`. It installs Scion and keeps it up to date.
+- **macOS, Apple silicon:** `Scion-osx-arm64.zip`. The app has no developer signature yet, so macOS blocks it the first time.
+  Unzip it and run this once in Terminal, in the folder that holds `Scion.app`, then open the app:
+
+  ```
+  xattr -dr com.apple.quarantine Scion.app
+  ```
+
+  The Mac app does not update itself: download the next version the same way.
+
+Or build it yourself. Requirements:
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (see `global.json`).
 - Optional, for *Adapt with AI*: your own installed and signed-in
@@ -184,12 +196,13 @@ A new AI provider or agent is a new adapter class and a registration, not a chan
 
 ## Status
 
-Pre-1.0. Developed and tested on Windows.
+Pre-1.0. Developed on Windows. The macOS build for Apple silicon has been tried on one Mac; Intel Macs and Linux have not been
+run yet (the code targets them).
 
 Planned:
 
-- Verify macOS and Linux (the code targets them, but they have not been run yet).
-- A first release with a Windows build, so you can download the app instead of building it.
+- Intel Macs and Linux: build, try and release them.
+- macOS: sign and notarize the app, give it an icon, and let it update itself.
 - Codex: honour `CODEX_HOME`, and warn on the instruction-file tab when an `AGENTS.override.md` makes
   the `AGENTS.md` beside it have no effect.
 

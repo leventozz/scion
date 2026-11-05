@@ -1,8 +1,8 @@
 name: Package macOS
 
-# A package of the app to try on a Mac. It is not a release: nothing is published and Scion's updater never sees it. The result is a
-# workflow artifact (a zip with Scion.app) for each kind of Mac: osx-arm64 is Apple silicon, osx-x64 is Intel.
-# Run it from the Actions tab, or push the branch macos-package.
+# A package of the app to try on a Mac. It is not a release: nothing is published and Scion's updater never sees it (the release's
+# own macOS zip is made by release.yml, with the same script). The result is a workflow artifact for each kind of Mac: osx-arm64 is
+# Apple silicon, osx-x64 is Intel. Run it from the Actions tab, or push the branch macos-package.
 on:
   workflow_dispatch:
   push:
@@ -35,45 +35,11 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - run: dotnet publish src/Scion.Host.Desktop -c Release -r ${{ matrix.rid }} --self-contained -o publish
+      - name: Make Scion.app and zip it
+        run: bash tools/macos/package-app.sh ${{ matrix.rid }} ${{ steps.version.outputs.version }} out/Scion-${{ steps.version.outputs.version }}-${{ matrix.rid }}.zip
 
-      # An app bundle, so the Mac starts it like any app: no terminal window, and its own entry in the Dock.
-      - name: Make Scion.app
+      - name: Instructions
         run: |
-          version='${{ steps.version.outputs.version }}'
-          mkdir -p Scion.app/Contents/MacOS
-          cp -R publish/. Scion.app/Contents/MacOS/
-          cat > Scion.app/Contents/Info.plist <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleName</key><string>Scion</string>
-            <key>CFBundleDisplayName</key><string>Scion</string>
-            <key>CFBundleIdentifier</key><string>scion.desktop</string>
-            <key>CFBundleExecutable</key><string>Scion.Host.Desktop</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>CFBundleShortVersionString</key><string>${version}</string>
-            <key>CFBundleVersion</key><string>${version}</string>
-            <key>LSMinimumSystemVersion</key><string>11.0</string>
-            <key>NSHighResolutionCapable</key><true/>
-          </dict>
-          </plist>
-          PLIST
-          plutil -lint Scion.app/Contents/Info.plist
-          chmod +x Scion.app/Contents/MacOS/Scion.Host.Desktop
-          # Without any signature an Apple silicon Mac refuses to run the app at all. This one is ad hoc: no developer identity,
-          # so Gatekeeper still asks (see the artifact's README). Each piece of native code (the program and the .dylib files) is
-          # signed on its own: that is what an Apple silicon Mac checks when it loads them. The bundle itself is not signed, with
-          # or without --deep: codesign counts the managed .dll files in Contents/MacOS as unsigned code (and takes a folder such as
-          # wwwroot/_content/Scion.UI for a nested bundle), and fails.
-          find Scion.app/Contents/MacOS -type f \( -name '*.dylib' -o -name 'Scion.Host.Desktop' \) -exec codesign --force --sign - {} \;
-          find Scion.app/Contents/MacOS -type f \( -name '*.dylib' -o -name 'Scion.Host.Desktop' \) -exec codesign --verify --strict {} \;
-
-      - name: Zip it
-        run: |
-          mkdir out
-          ditto -c -k --keepParent Scion.app "out/Scion-${{ steps.version.outputs.version }}-${{ matrix.rid }}.zip"
           cat > out/README.txt <<'TEXT'
           Scion for macOS, a package to try. It is not signed with a developer identity, so macOS blocks it the first time.
           Unzip it, then run once in Terminal, in the folder that holds Scion.app:
