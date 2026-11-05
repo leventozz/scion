@@ -63,14 +63,12 @@ jobs:
           plutil -lint Scion.app/Contents/Info.plist
           chmod +x Scion.app/Contents/MacOS/Scion.Host.Desktop
           # Without any signature an Apple silicon Mac refuses to run the app at all. This one is ad hoc: no developer identity,
-          # so Gatekeeper still asks (see the artifact's README). Each piece of native code is signed on its own, then the bundle:
-          # --deep takes a folder such as wwwroot/_content/Scion.UI for a nested bundle (its name has an extension) and fails.
+          # so Gatekeeper still asks (see the artifact's README). Each piece of native code (the program and the .dylib files) is
+          # signed on its own: that is what an Apple silicon Mac checks when it loads them. The bundle itself is not signed, with
+          # or without --deep: codesign counts the managed .dll files in Contents/MacOS as unsigned code (and takes a folder such as
+          # wwwroot/_content/Scion.UI for a nested bundle), and fails.
           find Scion.app/Contents/MacOS -type f \( -name '*.dylib' -o -name 'Scion.Host.Desktop' \) -exec codesign --force --sign - {} \;
-          codesign --force --sign - Scion.app
-          # The bundle as a whole is not verified: it counts the managed .dll files in Contents/MacOS as unsigned code, and the
-          # system never loads them as native code. What was signed is verified, and the bundle's signature is shown.
           find Scion.app/Contents/MacOS -type f \( -name '*.dylib' -o -name 'Scion.Host.Desktop' \) -exec codesign --verify --strict {} \;
-          codesign --display --verbose=2 Scion.app
 
       - name: Zip it
         run: |
