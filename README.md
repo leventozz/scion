@@ -98,15 +98,15 @@ copy it as it is.
 Download the latest release from [Releases](https://github.com/leventozz/scion/releases/latest):
 
 - **Windows:** `Scion-win-Setup.exe`. It installs Scion and keeps it up to date.
-- **macOS, Apple silicon:** `Scion-osx-arm64.zip`. The app has no developer signature yet, so macOS blocks it the first time.
+- **macOS, Apple silicon:** `Scion-osx-arm64-Portable.zip`. The app has no developer signature yet, so macOS blocks it the first time.
   Unzip it and run this once in Terminal, in the folder that holds `Scion.app`, then open the app:
 
   ```
   xattr -dr com.apple.quarantine Scion.app
   ```
 
-  The Mac app does not update itself: download the next version the same way.
-- **macOS, Intel:** `Scion-osx-x64.zip`, opened the same way. It is made the same way as the Apple silicon build, but not tried on
+  The Mac app looks for updates in the same releases as the Windows one.
+- **macOS, Intel:** `Scion-osx-x64-Portable.zip`, opened the same way. It is made the same way as the Apple silicon build, but not tried on
   an Intel Mac yet.
 
 Or build it yourself. Requirements:

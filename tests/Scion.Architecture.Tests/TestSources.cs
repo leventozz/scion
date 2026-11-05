@@ -12,7 +12,14 @@ internal static class TestSources
 
     public static string Read(string project, string fileName) => File.ReadAllText(Path.Combine(Root(), project, fileName));
 
-    private static string Root()
+    /// <summary>A file of the repository itself (a script, a workflow, a plist), by its path from the repository root.</summary>
+    public static string ReadRepositoryFile(string relativePath) => File.ReadAllText(RepositoryFilePath(relativePath));
+
+    public static string RepositoryFilePath(string relativePath) => Path.Combine(RepositoryRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+    private static string Root() => Path.Combine(RepositoryRoot(), "tests");
+
+    private static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "scion.slnx")))
@@ -20,6 +27,6 @@ internal static class TestSources
             directory = directory.Parent;
         }
 
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("scion.slnx not found."), "tests");
+        return directory?.FullName ?? throw new InvalidOperationException("scion.slnx not found.");
     }
 }

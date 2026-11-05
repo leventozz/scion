@@ -1,8 +1,8 @@
 name: Package macOS
 
-# A package of the app to try on a Mac. It is not a release: nothing is published and Scion's updater never sees it (the release's
-# own macOS zip is made by release.yml, with the same script). The result is a workflow artifact for each kind of Mac: osx-arm64 is
-# Apple silicon, osx-x64 is Intel. Run it from the Actions tab, or push the branch macos-package.
+# A package of the app to try on a Mac. It is not a release: nothing is published and no feed changes. It is made the way the release's
+# Mac packages are (tools/macos/pack.sh: signed with a Developer ID, notarized, stapled), and the result is a workflow artifact for each
+# kind of Mac: osx-arm64 is Apple silicon, osx-x64 is Intel. Run it from the Actions tab, or push the branch macos-package.
 on:
   workflow_dispatch:
   push:
@@ -25,33 +25,50 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Read the version
-        id: version
-        run: |
-          version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -n 1)
-          if [ -z "$version" ]; then
-            echo "Directory.Build.props has no <Version>." >&2
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Read the versions
+        id: versions
+        run: bash tools/macos/read-versions.sh >> "$GITHUB_OUTPUT"
 
-      - name: Make Scion.app and zip it
-        run: bash tools/macos/package-app.sh ${{ matrix.rid }} ${{ steps.version.outputs.version }} out/Scion-${{ steps.version.outputs.version }}-${{ matrix.rid }}.zip
+      # vpk must be the same version as the Velopack package inside the app.
+      - name: Install vpk
+        run: |
+          dotnet tool install -g vpk --version ${{ steps.versions.outputs.velopack }}
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Signing keychain
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: bash tools/macos/signing-keychain.sh create
+
+      - name: Pack, sign and notarize
+        run: bash tools/macos/pack.sh ${{ matrix.rid }} ${{ steps.versions.outputs.version }}
+
+      - name: Remove the signing keychain
+        if: always()
+        run: bash tools/macos/signing-keychain.sh delete
 
       - name: Instructions
         run: |
+          mkdir -p out
+          cp Releases/Scion-${{ matrix.rid }}-Portable.zip out/
           cat > out/README.txt <<'TEXT'
-          Scion for macOS, a package to try. It is not signed with a developer identity, so macOS blocks it the first time.
-          Unzip it, then run once in Terminal, in the folder that holds Scion.app:
+          Scion for macOS, a package to try. It is signed with a Developer ID and notarized, so macOS should open it without a warning.
+          Unzip it and open Scion.app. Do not run anything in Terminal first: the point of this package is that it opens without.
+          If macOS blocks it anyway, say what the dialog says. Only then, to go on trying, run once in the folder that holds Scion.app:
 
             xattr -dr com.apple.quarantine Scion.app
 
-          Then open Scion.app. If you pick the wrong kind of Mac (arm64 is Apple silicon, x64 is Intel) it will not start.
-          Say what you see: it starts or not, the window, the project grid, adding a project, the skill pages, editing and copying.
+          If you pick the wrong kind of Mac (arm64 is Apple silicon, x64 is Intel) it will not start.
+          Say what you see: it starts or not, the window, the project grid, adding a project, the skill pages, editing, copying, and
+          Adapt with AI (it starts your own Claude Code).
           TEXT
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Scion-${{ steps.version.outputs.version }}-${{ matrix.rid }}
+          name: Scion-${{ steps.versions.outputs.version }}-${{ matrix.rid }}
           path: out
           if-no-files-found: error

@@ -4,3 +4,5 @@
 *.woff2 binary
 *.ico binary
 *.png binary
+*.icns binary
+*.sh text eol=lf

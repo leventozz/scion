@@ -77,9 +77,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit v${{ steps.versions.outputs.version }} --notes-file ${{ steps.versions.outputs.notes }}
 
-  # The macOS zips, attached to the release the job above has just published: osx-arm64 is Apple silicon, osx-x64 is Intel. Each is a
-  # plain zip with Scion.app: Scion's updater (Velopack) does not know them, so a Mac installs a new version by downloading it again.
-  # The file names are the ones the website links to (releases/latest/download/<file>); a test ties the page to these names.
+  # The Mac packages, added to the release the job above has just published: osx-arm64 is Apple silicon, osx-x64 is Intel. Each is signed
+  # with a Developer ID, notarized and stapled (tools/macos/pack.sh), and Scion updates itself from the same release through its own
+  # feed (releases.<runtime id>.json: the runtime id is Velopack's channel). The zip people download is Scion-<runtime id>-Portable.zip,
+  # the name the website links to (releases/latest/download/<file>); a test ties the page to these names. The signing keychain lives only
+  # for this job: its last step runs whatever happened before it.
   macos:
     needs: release
     runs-on: macos-latest
@@ -88,9 +90,11 @@ jobs:
       matrix:
         include:
           - rid: osx-arm64
-            file: Scion-osx-arm64.zip
+            file: Scion-osx-arm64-Portable.zip
           - rid: osx-x64
-            file: Scion-osx-x64.zip
+            file: Scion-osx-x64-Portable.zip
+    env:
+      REPO_URL: ${{ github.server_url }}/${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
 
@@ -98,10 +102,47 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Make Scion.app and zip it
-        run: bash tools/macos/package-app.sh ${{ matrix.rid }} "${GITHUB_REF_NAME#v}" ${{ matrix.file }}
+      - name: Read the versions
+        id: versions
+        run: |
+          bash tools/macos/read-versions.sh >> "$GITHUB_OUTPUT"
+          notes="docs/releases/$(sed -n 's/^version=//p' "$GITHUB_OUTPUT").md"
+          if [ -f "$notes" ]; then echo "notes=$notes" >> "$GITHUB_OUTPUT"; else echo "notes=" >> "$GITHUB_OUTPUT"; fi
 
-      - name: Attach the zip to the release
+      # vpk must be the same version as the Velopack package inside the app.
+      - name: Install vpk
+        run: |
+          dotnet tool install -g vpk --version ${{ steps.versions.outputs.velopack }}
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      # The previous release lets vpk build a delta package. The first release of a Mac channel has none, and a missing delta only makes the update larger.
+      - name: Download the previous release of this channel
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$GITHUB_REF_NAME" ${{ matrix.file }} --clobber
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: vpk download github --repoUrl "$REPO_URL" --channel ${{ matrix.rid }} --token "$GITHUB_TOKEN"
+
+      - name: Signing keychain
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: bash tools/macos/signing-keychain.sh create
+
+      - name: Pack, sign and notarize
+        run: bash tools/macos/pack.sh ${{ matrix.rid }} ${{ steps.versions.outputs.version }} ${{ steps.versions.outputs.notes }}
+
+      # The website's download buttons point at these file names on the latest release.
+      - name: Download keeps its name
+        run: test -f Releases/${{ matrix.file }}
+
+      - name: Add the packages to the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: vpk upload github --repoUrl "$REPO_URL" --merge --tag v${{ steps.versions.outputs.version }} --channel ${{ matrix.rid }} --token "$GITHUB_TOKEN"
+
+      - name: Remove the signing keychain
+        if: always()
+        run: bash tools/macos/signing-keychain.sh delete

@@ -43,7 +43,7 @@ public class WebsiteTests
             .Select(match => (Address: match.Groups["address"].Value, File: match.Groups["file"].Value))
             .ToList();
 
-        Assert.Equal(["Scion-osx-arm64.zip", "Scion-osx-x64.zip", "Scion-win-Setup.exe"], downloads.Select(download => download.File).Order(StringComparer.Ordinal));
+        Assert.Equal(["Scion-osx-arm64-Portable.zip", "Scion-osx-x64-Portable.zip", "Scion-win-Setup.exe"], downloads.Select(download => download.File).Order(StringComparer.Ordinal));
         Assert.All(downloads, download => Assert.True(AllowedAddresses.Site.Allows(download.Address), $"{download.Address} is not the repository's."));
 
         var release = File.ReadAllText(Path.Combine(RepositoryRoot(), ".github", "workflows", "release.yml"));
