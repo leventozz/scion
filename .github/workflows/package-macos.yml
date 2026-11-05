@@ -63,9 +63,11 @@ jobs:
           plutil -lint Scion.app/Contents/Info.plist
           chmod +x Scion.app/Contents/MacOS/Scion.Host.Desktop
           # Without any signature an Apple silicon Mac refuses to run the app at all. This one is ad hoc: no developer identity,
-          # so Gatekeeper still asks (see the artifact's README).
-          codesign --force --deep --sign - Scion.app
-          codesign --verify --deep --strict Scion.app
+          # so Gatekeeper still asks (see the artifact's README). Each piece of native code is signed on its own, then the bundle:
+          # --deep takes a folder such as wwwroot/_content/Scion.UI for a nested bundle (its name has an extension) and fails.
+          find Scion.app/Contents/MacOS -type f \( -name '*.dylib' -o -name 'Scion.Host.Desktop' \) -exec codesign --force --sign - {} \;
+          codesign --force --sign - Scion.app
+          codesign --verify --strict Scion.app
 
       - name: Zip it
         run: |
