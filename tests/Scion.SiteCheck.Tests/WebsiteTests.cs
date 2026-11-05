@@ -21,7 +21,7 @@ public class WebsiteTests
     [Fact]
     public void Every_image_has_alt_text_and_a_size_and_is_one_of_the_shared_images()
     {
-        var images = Tags("img");
+        var images = ContentImages();
 
         Assert.NotEmpty(images);
         foreach (var image in images)
@@ -72,20 +72,42 @@ public class WebsiteTests
     }
 
     [Fact]
-    public void The_Intel_build_is_offered_with_the_same_words_everywhere_about_not_having_been_tried()
+    public void The_download_buttons_stand_alone_with_no_notes_under_them()
     {
-        const string NotTried = "not tried on an Intel Mac yet";
+        Assert.DoesNotContain("class=\"note\"", Page());
+        Assert.DoesNotContain(".note", Styles());
+    }
+
+    [Fact]
+    public void The_README_says_the_Intel_build_has_not_been_tried()
+    {
         // A line break in Markdown is a space.
         var readme = Regex.Replace(File.ReadAllText(Path.Combine(RepositoryRoot(), "README.md")), @"\s+", " ");
 
-        Assert.Contains(NotTried, PageText());
-        Assert.Contains(NotTried, readme);
+        Assert.Contains("not tried on an Intel Mac yet", readme);
+    }
+
+    [Fact]
+    public void The_header_has_the_apps_icon_beside_the_wordmark_as_decoration_only()
+    {
+        var wordmark = Regex.Match(Page(), @"<a class=""wordmark""[^>]*>(?<inner>.*?)</a>", RegexOptions.Singleline).Groups["inner"].Value;
+        var icon = Regex.Match(wordmark, @"<img\b[^>]*>").Value;
+
+        Assert.NotEmpty(icon);
+        // The same file as the favicon: the page has one copy of the app's icon.
+        Assert.Equal(Attribute(LinkTag("icon"), "href"), Attribute(icon, "src"));
+        // Beside the word "Scion", so a screen reader needs nothing from it.
+        Assert.Equal("", Attribute(icon, "alt"));
+        Assert.True(int.TryParse(Attribute(icon, "width"), out _), $"No width: {icon}");
+        Assert.True(int.TryParse(Attribute(icon, "height"), out _), $"No height: {icon}");
+        Assert.StartsWith("<img", wordmark.Trim());
+        Assert.Equal("Scion", Regex.Replace(wordmark, "<[^>]+>", "").Trim());
     }
 
     [Fact]
     public void Only_the_first_image_loads_eagerly()
     {
-        var images = Tags("img");
+        var images = ContentImages();
 
         Assert.NotEqual("lazy", Attribute(images[0], "loading"));
         Assert.All(images.Skip(1), image => Assert.Equal("lazy", Attribute(image, "loading")));
@@ -191,6 +213,10 @@ public class WebsiteTests
 
         return Regex.Replace(text, @"\s+", " ");
     }
+
+    /// <summary>The pictures of the page's content: the screenshots, not the app's icon in the header.</summary>
+    private static List<string> ContentImages() =>
+        Tags("img").Where(tag => Attribute(tag, "src") != Attribute(LinkTag("icon"), "href")).ToList();
 
     private static List<string> Tags(string name) =>
         Regex.Matches(Page(), $@"<{name}\b[^>]*>", RegexOptions.Singleline).Select(match => match.Value).ToList();

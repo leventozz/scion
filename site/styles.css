@@ -119,6 +119,9 @@ img {
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 500;
@@ -201,23 +204,6 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.note {
-  margin-top: var(--space-md);
-  color: var(--outline);
-  font-size: 13px;
-  line-height: 18px;
-  text-align: center;
-}
-
-.note + .note {
-  margin-top: var(--space-sm);
-}
-
-.note code {
-  color: var(--on-surface-variant);
-  white-space: nowrap;
 }
 
 .button {
@@ -481,16 +467,6 @@ code {
 
   .button {
     padding: 8px 24px;
-  }
-
-  .note {
-    margin-top: var(--space-md);
-    font-size: 12px;
-    text-align: left;
-  }
-
-  .note + .note {
-    margin-top: var(--space-sm);
   }
 
   .why {
