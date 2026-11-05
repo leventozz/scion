@@ -53,6 +53,14 @@ jobs:
           if ('${{ steps.versions.outputs.notes }}') { $arguments += @('--releaseNotes', '${{ steps.versions.outputs.notes }}') }
           vpk @arguments
 
+      # The website's download button points at this file name on the latest release.
+      - name: Installer keeps its name
+        shell: pwsh
+        run: |
+          if (-not (Test-Path Releases/Scion-win-Setup.exe)) {
+            throw "Releases/Scion-win-Setup.exe is missing: the website's download link goes to this name."
+          }
+
       - name: Upload
         run: >
           vpk upload github

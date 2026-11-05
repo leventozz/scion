@@ -1,0 +1,56 @@
+name: Pages
+
+# Publishes the website (site/) to GitHub Pages. The images, the fonts and the icon are not copied into site/:
+# the one copy of each stays where the app uses it, and the build puts them next to the page.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/images/**'
+      - 'src/Scion.UI/wwwroot/fonts/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cp -r site/. _site/
+          cp -r docs/images _site/images
+          cp -r src/Scion.UI/wwwroot/fonts _site/fonts
+          cp assets/scion-icon.svg _site/favicon.svg
+
+      # Fails the build when a page or stylesheet loads something from outside the site.
+      - name: Check for external references
+        run: dotnet run --project tools/Scion.SiteCheck -c Release -- _site
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
