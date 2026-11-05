@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <!-- Smoke tests drive the real desktop app (Windows, WebView2). A plain "dotnet test" skips them;
-         run them with the filter Category=Smoke on this project -->
-    <VSTestTestCaseFilter Condition="'$(VSTestTestCaseFilter)' == ''">Category!=Smoke</VSTestTestCaseFilter>
+         run them with the filter Category=Smoke on this project. The DocsImages tests write the screenshots in
+         docs/images; they run only on request, with the filter Category=DocsImages. -->
+    <VSTestTestCaseFilter Condition="'$(VSTestTestCaseFilter)' == ''">Category!=Smoke&amp;Category!=DocsImages</VSTestTestCaseFilter>
   </PropertyGroup>
 
   <ItemGroup>

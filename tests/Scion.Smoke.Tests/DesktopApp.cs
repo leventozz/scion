@@ -175,23 +175,35 @@ internal sealed class DesktopApp : IAsyncDisposable
         return reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    public async Task ScreenshotAsync(string name)
+    public Task ScreenshotAsync(string name)
     {
         var directory = Path.Combine(AppContext.BaseDirectory, "screenshots");
         Directory.CreateDirectory(directory);
 
+        return CaptureAsync(Path.Combine(directory, name + ".png"));
+    }
+
+    /// <summary>Writes a screenshot of the page, or only of the element the selector names, to <paramref name="filePath"/>.</summary>
+    public async Task CaptureAsync(string filePath, string? elementSelector = null)
+    {
         // A window that is hidden or covered by another produces no frames, and the capture then waits for one until it
         // times out (seen on 2026-11-04: a different test in every full run, none when run alone). Bringing the page to the
         // front makes the window draw.
         // It does not always help: one capture in some sixty still stalls. It is tried once more, shorter; a second stall fails the
         // test, it is not ignored.
-        var options = new PageScreenshotOptions { Path = Path.Combine(directory, name + ".png"), Timeout = 10_000 };
         for (var attempt = 1; ; attempt++)
         {
             await Page.BringToFrontAsync();
             try
             {
-                await Page.ScreenshotAsync(options);
+                if (elementSelector is null)
+                {
+                    await Page.ScreenshotAsync(new PageScreenshotOptions { Path = filePath, Timeout = 10_000 });
+                }
+                else
+                {
+                    await Page.Locator(elementSelector).ScreenshotAsync(new LocatorScreenshotOptions { Path = filePath, Timeout = 10_000 });
+                }
 
                 return;
             }

@@ -11,14 +11,25 @@ namespace Scion.Infrastructure.FileSystem;
 /// </summary>
 public sealed class FileSystemTargetContext(string homeDirectory, IEnumerable<IInstructionFileLayout> layouts) : ITargetContextReader
 {
-    private const int Depth = 2;
+    /// <summary>How many levels of folder names an adaptation shares; the README and the website say the same.</summary>
+    public const int FolderNameDepth = 2;
 
-    private static readonly HashSet<string> ManifestNames = new(StringComparer.Ordinal)
-    {
-        "package.json", "pyproject.toml", "go.mod", "Cargo.toml", "pom.xml", "build.gradle",
-    };
+    /// <summary>The project manifests an adaptation shares: file names, or <c>*.extension</c> patterns. The one list the README and the website are tested against.</summary>
+    public static IReadOnlyList<string> SharedManifests { get; } =
+    [
+        "*.csproj", "*.sln", "*.slnx", "package.json", "pyproject.toml", "go.mod", "Cargo.toml", "pom.xml", "build.gradle",
+    ];
 
-    private static readonly string[] ManifestExtensions = [".csproj", ".sln", ".slnx"];
+    private const string ExtensionPattern = "*";
+
+    private static readonly HashSet<string> ManifestNames = SharedManifests
+        .Where(manifest => !manifest.StartsWith(ExtensionPattern, StringComparison.Ordinal))
+        .ToHashSet(StringComparer.Ordinal);
+
+    private static readonly string[] ManifestExtensions = SharedManifests
+        .Where(manifest => manifest.StartsWith(ExtensionPattern, StringComparison.Ordinal))
+        .Select(manifest => manifest[ExtensionPattern.Length..])
+        .ToArray();
 
     private static readonly HashSet<string> SkippedFolders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -97,7 +108,7 @@ public sealed class FileSystemTargetContext(string homeDirectory, IEnumerable<II
         {
             manifests.AddRange(Safely(() => Directory.EnumerateFiles(directory)).Where(IsManifest));
 
-            if (level == Depth)
+            if (level == FolderNameDepth)
             {
                 return;
             }

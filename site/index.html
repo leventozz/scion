@@ -3,29 +3,144 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scion</title>
+  <title>Scion: manage AI agent skills per project</title>
+  <meta name="description" content="Manage AI agent skills per project, and adapt them instead of just copying.">
+  <link rel="canonical" href="https://leventozz.github.io/scion/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Scion: manage AI agent skills per project">
+  <meta property="og:description" content="Manage AI agent skills per project, and adapt them instead of just copying.">
+  <meta property="og:url" content="https://leventozz.github.io/scion/">
+  <meta property="og:image" content="https://leventozz.github.io/scion/images/project-grid.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="360">
+  <meta property="og:image:alt" content="Scion's project grid: a pinned Personal card and three project cards">
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="site-header">
-    <span class="wordmark">Scion</span>
+    <div class="container header-inner">
+      <a class="wordmark" href="./">Scion</a>
+      <a class="header-link" href="https://github.com/leventozz/scion">GitHub</a>
+    </div>
   </header>
 
   <main>
-    <h1>Manage AI agent skills per project, and adapt them instead of just copying.</h1>
+    <section class="hero container">
+      <div class="dictionary-entry">
+        <h1>scion</h1>
+        <p class="pronunciation">/ˈsaɪ.ən/ · noun · rhymes with lion</p>
+        <ol class="definitions">
+          <li>A young shoot cut from one plant to be grafted onto another.</li>
+          <li>A desktop app that grafts your AI skills from one project onto another, so they grow on new roots.</li>
+        </ol>
+        <div class="actions">
+          <a class="button button-primary" href="https://github.com/leventozz/scion/releases/latest/download/Scion-win-Setup.exe">Download for Windows</a>
+          <a class="button button-secondary" href="https://github.com/leventozz/scion">View on GitHub</a>
+        </div>
+        <p class="note">macOS and Linux are coming. Free and open source (MIT).</p>
+      </div>
 
-    <p class="actions">
-      <a class="button button-primary" href="https://github.com/leventozz/scion/releases/latest/download/Scion-win-Setup.exe">Download for Windows</a>
-      <a class="button button-secondary" href="https://github.com/leventozz/scion">View on GitHub</a>
-    </p>
+      <figure class="shot">
+        <img src="images/project-grid.png" alt="Scion's project grid: a pinned Personal card and three project cards" width="1280" height="360" fetchpriority="high">
+      </figure>
+    </section>
 
-    <img class="screenshot" src="images/project-grid.png" alt="Scion's project grid: a pinned Personal card and three project cards" width="860">
+    <section class="why" aria-labelledby="why-heading">
+      <div class="container why-text">
+        <h2 id="why-heading">Why Scion</h2>
+        <p>Skills for Claude Code and Codex live next to your code, one set per project. Scion shows them project by project, and adapts a skill to another project's stack instead of just copying it.</p>
+      </div>
+    </section>
+
+    <div class="features container">
+      <article class="feature">
+        <div class="feature-text">
+          <span class="feature-number" aria-hidden="true">01</span>
+          <h3>Browse</h3>
+          <p>Every project's skills, Claude Code and Codex side by side. Open a skill to read it, or the project's CLAUDE.md and AGENTS.md.</p>
+        </div>
+        <figure class="feature-media shot">
+          <img src="images/project-skills.png" alt="The Skills tab of a project: four skills, each with its description" width="1280" height="540" loading="lazy" decoding="async">
+        </figure>
+      </article>
+
+      <article class="feature">
+        <div class="feature-text">
+          <span class="feature-number" aria-hidden="true">02</span>
+          <h3>Edit and create</h3>
+          <p>Edit a SKILL.md or an instruction file in place, with live checks on the frontmatter. Every save keeps the previous version.</p>
+        </div>
+        <figure class="feature-media shot">
+          <img src="images/skill-edit.png" alt="A SKILL.md open in the editor, with an Unsaved changes note and Cancel and Save buttons" width="1280" height="800" loading="lazy" decoding="async">
+        </figure>
+      </article>
+
+      <article class="feature">
+        <div class="feature-text">
+          <span class="feature-number" aria-hidden="true">03</span>
+          <h3>Copy</h3>
+          <p>Copy skills to another project or agent. If a skill with the same name is already there, you decide: skip or overwrite.</p>
+        </div>
+        <figure class="feature-media shot shot-dialog">
+          <img src="images/copy-conflict.png" alt="The copy dialog: release-notes already exists in the target with different content, with Skip and Overwrite to choose from" width="580" height="550" loading="lazy" decoding="async">
+        </figure>
+      </article>
+
+      <article class="feature">
+        <div class="feature-text">
+          <span class="feature-number" aria-hidden="true">04</span>
+          <h3>Adapt with AI</h3>
+          <p>Let Claude Code or Codex rewrite a skill for another project's stack. You review the changes side by side before anything is saved.</p>
+        </div>
+        <figure class="feature-media shot">
+          <img src="images/adapt-review.png" alt="Side-by-side review of an adapted skill: a Jest skill adapted to a project that uses Vitest" width="1280" height="800" loading="lazy" decoding="async">
+        </figure>
+      </article>
+    </div>
+
+    <section class="panel-section container" aria-labelledby="safe-heading">
+      <div class="panel">
+        <h2 id="safe-heading">Safe by default</h2>
+        <div class="panel-card">
+          <ol class="promises">
+            <li>Scion never writes its own files into your repositories.</li>
+            <li>Remove from Scion never deletes a folder.</li>
+            <li>Delete moves a skill to Scion's trash.</li>
+            <li>Nothing is overwritten without your decision.</li>
+            <li>Every save keeps the previous version.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="what-adapt-sends" class="panel-section container" aria-labelledby="sends-heading">
+      <div class="panel">
+        <div class="panel-card">
+          <h2 id="sends-heading">What Adapt with AI sends</h2>
+          <ul class="sends">
+            <li>The skill's <code>SKILL.md</code></li>
+            <li>The target's instruction files (<code>CLAUDE.md</code> / <code>AGENTS.md</code>)</li>
+            <li>Project manifests (<code>*.csproj</code>, <code>*.sln</code>, <code>*.slnx</code>, <code>package.json</code>, <code>pyproject.toml</code>, <code>go.mod</code>, <code>Cargo.toml</code>, <code>pom.xml</code>, <code>build.gradle</code>)</li>
+            <li>Folder names two levels deep</li>
+          </ul>
+          <p class="sends-closing">Never a source file. You see exactly what will be sent before you press Adapt.</p>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
-    <p><a href="https://github.com/leventozz/scion/blob/main/LICENSE">MIT License</a></p>
-    <p>Claude and Anthropic are trademarks of Anthropic, PBC. Codex, ChatGPT and OpenAI are trademarks of OpenAI. Scion is not affiliated with either company.</p>
+    <div class="container">
+      <p class="footer-links">
+        <a href="https://github.com/leventozz/scion/blob/main/LICENSE">MIT License</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/leventozz/scion">GitHub</a>
+      </p>
+      <p class="trademarks">Claude and Anthropic are trademarks of Anthropic, PBC. Codex, ChatGPT and OpenAI are trademarks of OpenAI. Scion is not affiliated with either company.</p>
+    </div>
   </footer>
 </body>
 </html>

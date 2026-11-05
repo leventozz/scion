@@ -259,9 +259,7 @@ public class CopySmokeTests
 
     private static void WriteSkill(string project, string name, string description, bool withExtras)
     {
-        var folder = SkillFolder(project, name);
-        Directory.CreateDirectory(folder);
-        File.WriteAllText(Path.Combine(folder, "SKILL.md"), $"---\nname: {name}\ndescription: {description}\n---\nBody\n");
+        var folder = Fixtures.WriteClaudeSkill(project, name, description);
 
         if (withExtras)
         {
