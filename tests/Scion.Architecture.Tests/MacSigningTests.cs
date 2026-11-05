@@ -153,6 +153,23 @@ public class MacSigningTests
         Assert.Contains("Scion-osx-x64-Portable.zip", mac);
     }
 
+    /// <summary>
+    /// <c>codesign --deep</c> takes a folder whose name has an extension for a bundle: with <c>_content/Scion.UI</c> in Contents/MacOS the
+    /// first trial run failed with "bundle format unrecognized, invalid, or unsuitable. In subcomponent: …/wwwroot/_content/Scion.UI".
+    /// </summary>
+    [Fact]
+    public void The_UI_library_serves_its_files_from_a_folder_without_a_dot_and_the_page_asks_for_that_folder()
+    {
+        var project = TestSources.ReadRepositoryFile("src/Scion.UI/Scion.UI.csproj");
+        var basePath = Regex.Match(project, @"<StaticWebAssetBasePath>([^<]+)</StaticWebAssetBasePath>").Groups[1].Value;
+        var page = TestSources.ReadRepositoryFile("src/Scion.Host.Desktop/wwwroot/index.html");
+
+        Assert.NotEmpty(basePath);
+        Assert.DoesNotContain('.', basePath);
+        Assert.Contains($"href=\"{basePath}/scion.css\"", page);
+        Assert.Contains($"src=\"{basePath}/scion.js\"", page);
+    }
+
     private static readonly Regex Tracing = new(@"(?m)(\bset\s+-[a-zA-Z]*x|xtrace|\bbash\s+-[a-zA-Z]*x\b)", RegexOptions.Compiled);
 
     /// <summary>The steps of a job, without their comments: in these workflows each starts with a dash at six spaces.</summary>

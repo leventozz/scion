@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
+  <PropertyGroup>
+    <!-- No dot in the folder name: codesign takes "_content/Scion.UI" for a bundle (see MacSigningTests). -->
+    <StaticWebAssetBasePath>_content/ScionUI</StaticWebAssetBasePath>
+  </PropertyGroup>
+
   <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
