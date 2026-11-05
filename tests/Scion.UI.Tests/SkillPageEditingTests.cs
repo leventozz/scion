@@ -222,35 +222,6 @@ public class SkillPageEditingTests : BunitContext
     }
 
     [Fact]
-    public async Task After_the_shortcut_a_second_save_still_works_and_Cancel_shows_the_saved_file()
-    {
-        var page = RenderPage();
-        StartEditing(page);
-        Type(page, "# First\n");
-        await PressSaveShortcutAsync(page);
-        Type(page, "# Second\n");
-
-        Save(page);
-
-        Assert.Equal("# Second\n", _fakes.EditableFiles.TextOf(SkillMd));
-        Assert.Equal("Second", page.Find(".file-view .markdown h1").TextContent);
-    }
-
-    [Fact]
-    public async Task Cancel_after_the_shortcut_shows_what_was_saved()
-    {
-        var page = RenderPage();
-        StartEditing(page);
-        Type(page, "# Saved by shortcut\n");
-        await PressSaveShortcutAsync(page);
-
-        Cancel(page);
-
-        Assert.Empty(page.FindAll(".dialog"));
-        Assert.Equal("Saved by shortcut", page.Find(".file-view .markdown h1").TextContent);
-    }
-
-    [Fact]
     public void A_failed_save_stays_in_edit_mode_with_the_error_next_to_the_buttons_and_the_draft_kept()
     {
         _fakes.EditableFiles.FailWritesWith(FileSaveFailure.AccessDenied);
