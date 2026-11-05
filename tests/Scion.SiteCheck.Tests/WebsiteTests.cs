@@ -37,6 +37,32 @@ public class WebsiteTests
     }
 
     [Fact]
+    public void The_hero_links_the_files_of_the_latest_release_and_release_yml_makes_each_of_them()
+    {
+        var downloads = Regex.Matches(Page(), @"href=""(?<address>[^""]*/releases/latest/download/(?<file>[^""/]+))""")
+            .Select(match => (Address: match.Groups["address"].Value, File: match.Groups["file"].Value))
+            .ToList();
+
+        Assert.Equal(["Scion-osx-arm64.zip", "Scion-win-Setup.exe"], downloads.Select(download => download.File).Order(StringComparer.Ordinal));
+        Assert.All(downloads, download => Assert.True(AllowedAddresses.Site.Allows(download.Address), $"{download.Address} is not the repository's."));
+
+        var release = File.ReadAllText(Path.Combine(RepositoryRoot(), ".github", "workflows", "release.yml"));
+        Assert.All(downloads, download => Assert.Contains(download.File, release));
+    }
+
+    [Fact]
+    public void The_macOS_download_says_which_Macs_it_is_for_and_how_to_open_an_app_without_a_developer_signature()
+    {
+        const string RemoveQuarantine = "xattr -dr com.apple.quarantine Scion.app";
+        var root = RepositoryRoot();
+
+        Assert.Contains("Apple silicon", PageText());
+        Assert.Contains(RemoveQuarantine, PageText());
+        Assert.Contains(RemoveQuarantine, File.ReadAllText(Path.Combine(root, "README.md")));
+        Assert.Contains(RemoveQuarantine, File.ReadAllText(Path.Combine(root, ".github", "workflows", "package-macos.yml")));
+    }
+
+    [Fact]
     public void Only_the_first_image_loads_eagerly()
     {
         var images = Tags("img");

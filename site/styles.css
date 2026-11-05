@@ -211,6 +211,15 @@ h1 {
   text-align: center;
 }
 
+.note + .note {
+  margin-top: var(--space-sm);
+}
+
+.note code {
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -465,6 +474,7 @@ code {
 
   .actions {
     flex-direction: row;
+    flex-wrap: wrap;
     gap: var(--space-md);
   }
 
